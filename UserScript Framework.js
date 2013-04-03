@@ -79,3 +79,19 @@ function parse_url(str, component)
 	delete uri.source;
 	return uri;
 }
+
+	function _uf_map_maxheight(who)
+	{
+		var maxHeight = Math.max.apply(null, $(who).map(function ()
+		{
+			return $(this).height();
+		}).get());
+
+		return maxHeight;
+	}
+
+	function _uf_done(event)
+	{
+		event.stopPropagation();
+		event.preventDefault();
+	}
