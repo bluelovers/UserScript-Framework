@@ -21,6 +21,14 @@ if (typeof GM_addStyle === 'undefined')
 	};
 }
 
+if (typeof GM_openInTab === 'undefined')
+{
+	GM_openInTab = function(url)
+	{
+		window.open(url);
+	};
+}
+
 function parse_url(str, component)
 {
 	// http://kevin.vanzonneveld.net
