@@ -118,6 +118,8 @@ function parse_url(str, component)
 
 		if (typeof console != "undefined")
 		{
-			return console.log.apply(console, args);
+			return console.log(args);
+
+			//return console.log.apply(console, args);
 		}
 	}
