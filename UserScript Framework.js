@@ -1,14 +1,16 @@
 if (typeof GM_addStyle === 'undefined')
 {
-	GM_addStyle = function(css)
+	GM_addStyle = function(css, head)
 	{
-		var head = document.getElementsByTagName('head')[0],
-			style = document.createElement('style');
+		var head = head || document.getElementsByTagName('head')[0];
 		if (!head)
 		{
 			return;
 		}
+
+		var style = document.createElement('style');
 		style.type = 'text/css';
+
 		try
 		{
 			style.innerHTML = css
@@ -18,6 +20,8 @@ if (typeof GM_addStyle === 'undefined')
 			style.innerText = css
 		}
 		head.appendChild(style);
+
+		return style;
 	};
 }
 
@@ -102,4 +106,18 @@ function parse_url(str, component)
 	{
 		event.stopPropagation();
 		event.preventDefault();
+
+		return false;
+	}
+
+	function _uf_log(object)
+	{
+		var args = Array.prototype.slice.call(arguments, 0) || [];
+
+//		throw new Error(args.toString());
+
+		if (typeof console != "undefined")
+		{
+			return console.log.apply(console, args);
+		}
 	}
