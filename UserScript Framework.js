@@ -92,6 +92,16 @@ function parse_url(str, component)
 	return uri;
 }
 
+	function _uf_disable_nocontextmenu(mode)
+	{
+		if (mode)
+		{
+			unsafeWindow.document.oncontextmenu = unsafeWindow.document.ondragstart = unsafeWindow.document.onselectstart = null;
+		}
+
+		$('body, html').removeAttr('ondragstart').removeAttr('oncontextmenu').removeAttr('onselectstart');
+	}
+
 	function _uf_map_maxheight(who)
 	{
 		var maxHeight = Math.max.apply(null, $(who).map(function ()
