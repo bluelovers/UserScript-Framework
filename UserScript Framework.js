@@ -133,3 +133,33 @@ function parse_url(str, component)
 			//return console.log.apply(console, args);
 		}
 	}
+
+	function _uf_trigger_key(who, keycode, eventname)
+	{
+		var e = jQuery.Event(eventname ? eventname : 'keydown', {
+			which: keycode,
+			keyCode: keycode,
+		});
+
+		return $(who).trigger(e);
+	}
+
+	function _uf_wait_while(_bool, _func, _time)
+	{
+		var _time = _time || 200;
+
+		var _val = _bool();
+
+		//_uf_log(_val);
+
+		if (_val)
+		{
+			return _func();
+		}
+		else
+		{
+			setTimeout(function(){
+				_uf_wait_while(_bool, _func, _time);
+			}, _time);
+		}
+	}
