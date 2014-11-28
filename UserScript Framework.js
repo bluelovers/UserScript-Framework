@@ -88,6 +88,15 @@ function parse_url(str, component)
 			}
 		});
 	}
+
+	for (i in key)
+	{
+		if (!uri[key[i]])
+		{
+			uri[key[i]] = '';
+		}
+	}
+
 	delete uri.source;
 	return uri;
 }
