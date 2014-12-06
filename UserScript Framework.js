@@ -86,7 +86,7 @@ function UF_addStyle(css, head, varmap)
 		}
 		else if (typeof text !== 'string')
 		{
-			var args = Array.prototype.slice.call(css, 0) || [];
+			var args = Array.prototype.slice.call(text, 0) || [];
 
 			var text = args.join("\n");
 		}
