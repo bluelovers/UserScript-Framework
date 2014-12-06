@@ -37,15 +37,20 @@ if (typeof GM_openInTab === 'undefined')
 
 function UF_addStyle(css, head, varmap)
 {
+	/*
 	if (typeof css !== 'string')
 	{
 		var args = Array.prototype.slice.call(css, 0) || [];
 
 		css = args.join("\n");
 	}
+	*/
 
 	var head = head || document.getElementsByTagName('head')[0];
 
+	var css = _uf_var_replace(css, varmap)
+
+	/*
 	if (varmap)
 	{
 		var flag = 'g';
@@ -64,9 +69,47 @@ function UF_addStyle(css, head, varmap)
 	}
 
 //	return css;
+	*/
 
 	return GM_addStyle(css, head);
 }
+
+	function _uf_var_replace(text, varmap)
+	{
+		if (0)
+		{
+			//
+		}
+		else if (typeof text === 'undefined' || text === '')
+		{
+			return '';
+		}
+		else if (typeof text !== 'string')
+		{
+			var args = Array.prototype.slice.call(css, 0) || [];
+
+			var text = args.join("\n");
+		}
+
+		if (varmap)
+		{
+			var flag = 'g';
+
+			var name;
+			for (name in varmap)
+			{
+				var _regex = new RegExp('(\{[\@\$]' + name + '\})', flag);
+
+				text = text.replace(_regex, varmap[name]);
+
+				var _regex = new RegExp('([\@\$]' + name + ')\\b', flag);
+
+				text = text.replace(_regex, varmap[name]);
+			}
+		}
+
+		return text;
+	}
 
 function parse_url(str, component)
 {
