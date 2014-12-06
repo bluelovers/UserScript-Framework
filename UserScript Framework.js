@@ -1,3 +1,5 @@
+;
+
 if (typeof GM_addStyle === 'undefined')
 {
 	GM_addStyle = function(css, head)
@@ -31,6 +33,39 @@ if (typeof GM_openInTab === 'undefined')
 	{
 		window.open(url);
 	};
+}
+
+function UF_addStyle(css, head, varmap)
+{
+	if (typeof css !== 'string')
+	{
+		var args = Array.prototype.slice.call(css, 0) || [];
+
+		css = args.join("\n");
+	}
+
+	var head = head || document.getElementsByTagName('head')[0];
+
+	if (varmap)
+	{
+		var flag = 'g';
+
+		var name;
+		for (name in varmap)
+		{
+			var _regex = new RegExp('([\@\$]' + name + ')', flag);
+
+			css = css.replace(_regex, varmap[name]);
+
+			var _regex = new RegExp('(\{[\@\$]' + name + '\})', flag);
+
+			css = css.replace(_regex, varmap[name]);
+		}
+	}
+
+//	return css;
+
+	return GM_addStyle(css, head);
 }
 
 function parse_url(str, component)
@@ -172,3 +207,5 @@ function parse_url(str, component)
 			}, _time);
 		}
 	}
+
+;
