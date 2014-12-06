@@ -53,11 +53,11 @@ function UF_addStyle(css, head, varmap)
 		var name;
 		for (name in varmap)
 		{
-			var _regex = new RegExp('([\@\$]' + name + ')\\b', flag);
+			var _regex = new RegExp('(\{[\@\$]' + name + '\})', flag);
 
 			css = css.replace(_regex, varmap[name]);
 
-			var _regex = new RegExp('(\{[\@\$]' + name + '\})', flag);
+			var _regex = new RegExp('([\@\$]' + name + ')\\b', flag);
 
 			css = css.replace(_regex, varmap[name]);
 		}
