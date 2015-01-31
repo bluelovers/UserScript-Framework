@@ -251,4 +251,37 @@ function parse_url(str, component)
 		}
 	}
 
+	function _uf_trim2(str)
+	{
+		if (typeof str === 'string')
+		{
+			return str.replace(/^[,\s]+|[,\s]+$/g, '');
+		}
+		else if (!str || $.isEmptyObject(str))
+		{
+			//
+		}
+		else if ($.isArray(str) || $.isPlainObject(str))
+		{
+			$.each(str, function(_i, _v){
+				var _ret = _uf_trim2(_v);
+
+				if (_ret !== null && typeof _ret !== 'undefined')
+				{
+					str[_i] = _ret;
+				}
+				else
+				{
+					//
+				}
+			});
+		}
+		else
+		{
+			//
+		}
+
+		return str;
+	}
+
 ;
