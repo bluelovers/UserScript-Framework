@@ -284,4 +284,20 @@ function parse_url(str, component)
 		return str;
 	}
 
+	// http://upshots.org/javascript/jquery-test-if-element-is-in-viewport-visible-on-screen
+	Function.prototype.debounce = function (threshold)
+	{
+		var callback = this;
+		var timeout;
+		return function()
+		{
+			var context = this, params = arguments;
+			clearTimeout(timeout);
+			timeout = setTimeout(function()
+			{
+				callback.apply(context, params);
+			}, threshold);
+		};
+	};
+
 ;
