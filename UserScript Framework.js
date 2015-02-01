@@ -302,6 +302,7 @@ function parse_url(str, component)
 		};
 	};
 
+	(function($){
 		(function(_old){
 
 			var _fn_top = function (who)
@@ -351,5 +352,6 @@ function parse_url(str, component)
 				};
 			}
 		})($.fn.scrollTo);
+	})(jQuery);
 
 ;
