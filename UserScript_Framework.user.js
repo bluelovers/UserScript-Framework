@@ -15,7 +15,7 @@
 //
 // @version		1
 //
-// grant		none
+// @grant		none
 //
 // @grant		GM_info
 //
@@ -27,7 +27,7 @@
 // @grant		GM_getResourceText
 // @grant		GM_getResourceURL
 //
-// @grant		GM_addStyle
+// grant		GM_addStyle
 // grant		GM_log
 // @grant		GM_openInTab
 // @grant		GM_registerMenuCommand
@@ -79,6 +79,8 @@ try
 
 	var _fn_init = function()
 	{
+		_fn_gm();
+
 		USF = userScriptFramework = Sandbox.USF = Sandbox.userScriptFramework = new userScriptFrameworkClass();
 
 		unsafeWindow.userScriptFramework = Sandbox.userScriptFramework;
@@ -102,16 +104,6 @@ try
 
 		userScriptFrameworkClass.fn = userScriptFrameworkClass.prototype.fn = extend(userScriptFrameworkClass.prototype, Sandbox.GM.prototype, Sandbox.userScriptFramework.fn, {
 
-			log: function(e)
-			{
-				var args = Array.prototype.slice.call(arguments, 0) || [];
-
-				if (typeof console !== 'undefined')
-				{
-					return console.log(args);
-				}
-			},
-
 			_cache_: {
 				fn_overwrite: {},
 				fn_old: {},
@@ -133,11 +125,6 @@ try
 				},
 
 				fn_clone: {
-
-					openInTab: ['GM_openInTab', function(url, options)
-					{
-						return window.open(url);
-					}],
 
 				},
 
@@ -261,6 +248,48 @@ try
 
 		return target;
 	});
+
+	var _fn_gm = function()
+	{
+		Sandbox.GM = {};
+
+		Sandbox.GM.prototype = extend(Sandbox.GM, {
+
+			log: function(e)
+			{
+				var args = Array.prototype.slice.call(arguments, 0) || [];
+
+				if (typeof console !== 'undefined')
+				{
+					return console.log(args);
+				}
+			},
+
+			openInTab: ((typeof GM_openInTab === 'function') ? GM_openInTab : function(url, options)
+			{
+				return window.open(url);
+			}),
+
+			addStyle: function(css, head)
+			{
+				var head = head || document.getElementsByTagName('head')[0] || document.documentElement;
+				if (!head)
+				{
+					return;
+				}
+
+				var style = document.createElement('style');
+				style.type = 'text/css';
+
+				style.innerText = style.textContent = style.innerHTML = css;
+
+				head.appendChild(style);
+
+				return style;
+			},
+
+		});
+	};
 
 	_fn_init.call(Sandbox);
 
