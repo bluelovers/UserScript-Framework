@@ -36,6 +36,7 @@
 // @grant		unsafeWindow
 //
 // @run-at		document-start
+// @noframes
 //
 // require	 http://code.jquery.com/jquery-latest.js?KU201
 //
@@ -255,7 +256,10 @@ try
 	{
 		Sandbox.GM = {};
 
-		Sandbox.GM.prototype = extend(Sandbox.GM, {
+		Sandbox.GM.prototype = extend(Sandbox.GM,
+		{
+
+			_storage_: localStorage,
 
 			log: function(e)
 			{
@@ -293,6 +297,39 @@ try
 			getResourceURL: ((typeof GM_getResourceURL === 'function') ? GM_getResourceURL : function(resourceName)
 			{
 				return 'greasemonkey-script:' + GM_info.uuid + '/' + resourceName;
+			}),
+
+			deleteValue: ((typeof GM_deleteValue === 'function') ? GM_deleteValue : function(name)
+			{
+				this._storage_.removeItem(__GM_STORAGE_PREFIX + name);
+			}),
+
+			getValue: ((typeof GM_getValue === 'function') ? GM_getValue : function(name, defaultValue)
+			{
+				var val = this._storage_.getItem(__GM_STORAGE_PREFIX + name);
+				if (null === val && 'undefined' != typeof defaultValue) return defaultValue;
+				return val;
+			}),
+
+			listValues: ((typeof GM_listValues === 'function') ? GM_listValues : function()
+			{
+				var prefixLen = __GM_STORAGE_PREFIX.length;
+				var values = [];
+				var i = 0;
+				for (var i = 0; i < this._storage_.length; i++)
+				{
+					var k = this._storage_.key(i);
+					if (k.substr(0, prefixLen) === __GM_STORAGE_PREFIX)
+					{
+						values.push(k.substr(prefixLen));
+					}
+				}
+				return values;
+			}),
+
+			setValue: ((typeof GM_setValue === 'function') ? GM_setValue : function(name, value)
+			{
+				this._storage_.setItem(__GM_STORAGE_PREFIX + name, value);
 			}),
 
 		});
