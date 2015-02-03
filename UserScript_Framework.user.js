@@ -15,7 +15,7 @@
 //
 // @version		1
 //
-// @grant		none
+// grant		none
 //
 // @grant		GM_info
 //
@@ -43,16 +43,18 @@
 // @resource	jquery http://code.jquery.com/jquery-latest.js?KU201
 //
 // ==/UserScript==
-
 try
 {
 
 	//GM_addStyle('a { color: red; }');
 
+	/*
 	console.log(['GM_log', typeof GM_log]);
 	console.log(['GM_openInTab', typeof GM_openInTab]);
 	console.log(['GM_xmlhttpRequest', typeof GM_xmlhttpRequest]);
 	console.log(['GM_addStyle', typeof GM_addStyle]);
+	console.log(['GM_getResourceText', typeof GM_getResourceText]);
+	*/
 
 	//console.log(0);
 
@@ -67,7 +69,7 @@ try
 		return Sandbox.userScriptFramework;
 	}
 
-	var USF, userScriptFramework;
+	var $UF, userScriptFramework;
 
 	var _fn_env = function()
 	{
@@ -75,7 +77,7 @@ try
 		Sandbox.window = window;
 
 		Sandbox.jQuery = $;
-		USF = userScriptFramework = Sandbox.USF = Sandbox.userScriptFramework = Sandbox.userScriptFramework || {};
+		$UF = userScriptFramework = Sandbox.$UF = Sandbox.userScriptFramework = Sandbox.userScriptFramework || {};
 
 		//Sandbox.a = function(){return 11111;};
 	};
@@ -86,10 +88,12 @@ try
 	{
 		_fn_gm();
 
-		USF = userScriptFramework = Sandbox.USF = Sandbox.userScriptFramework = new userScriptFrameworkClass();
+		$UF = userScriptFramework = Sandbox.$UF = Sandbox.userScriptFramework = new userScriptFrameworkClass();
 
 		unsafeWindow.userScriptFramework = Sandbox.userScriptFramework;
 		unsafeWindow.Sandbox = Sandbox;
+
+		_fn_done.call(Sandbox);
 
 		//console.log([99, Sandbox.userScriptFramework, Sandbox.userScriptFramework.fn]);
 
@@ -126,10 +130,13 @@ try
 				fn_overwrite: {
 
 					addStyle: true,
+					log: true,
 
 				},
 
 				fn_clone: {
+
+					//
 
 				},
 
@@ -146,19 +153,31 @@ try
 	{
 		var name;
 
-		console.log([Sandbox, userScriptFramework, userScriptFramework.fn]);
+		//console.log([Sandbox, userScriptFramework, userScriptFramework.fn]);
 
 		for (name in userScriptFramework.fn)
 		{
 			if (name != 'fn')
 			{
-				var _fn, _fn_new, _fn_name = 'GM_' + name;
+				var _fn = undefined, _fn_new = undefined, _fn_name = 'GM_' + name;
+
+				if (userScriptFramework._cache_.fn_overwrite[_fn_name] !== undefined)
+				{
+					continue;
+				}
 
 				eval('var _fn = typeof ' + _fn_name + ' === "undefined" ? undefined : ' + _fn_name + ';');
 
 				if (typeof _fn !== 'undefined')
 				{
 					userScriptFramework._cache_.fn_old[_fn_name] = _fn;
+
+					if (!userScriptFramework.options.fn_clone[name])
+					{
+						userScriptFramework._cache_.fn_overwrite[_fn_name] = false;
+
+						continue;
+					}
 				}
 
 				if (typeof userScriptFramework[name] === 'function')
@@ -172,6 +191,10 @@ try
 					{
 						Sandbox[_fn_name] = userScriptFramework._cache_.fn_overwrite[_fn_name] = _fn_new;
 					}
+					else
+					{
+						userScriptFramework._cache_.fn_overwrite[_fn_name] = false;
+					}
 				}
 
 				//userScriptFramework.log(name, _fn_name, _fn, _fn_new);
@@ -180,7 +203,12 @@ try
 
 		for (name in userScriptFramework.options.fn_clone)
 		{
-			var _fn = undefined, _fn_new, _fn_name;
+			if (userScriptFramework._cache_.fn_clone[name] !== undefined)
+			{
+				continue;
+			}
+
+			var _fn = undefined, _fn_new = undefined, _fn_name = '';
 			var data = userScriptFramework.options.fn_clone[name];
 
 			if (typeof data === 'string')
@@ -197,7 +225,7 @@ try
 				_fn = (typeof _fn_new === 'undefined') ? data[1] : _fn_new;
 			}
 
-			console.log([name, data, _fn, _fn_new, _fn_name, typeof data, data instanceof Array]);
+			//console.log([name, data, _fn, _fn_new, _fn_name, typeof data, data instanceof Array]);
 
 			if (typeof _fn === 'function')
 			{
@@ -342,7 +370,7 @@ try
 
 			getResourceText: ((typeof GM_getResourceText === 'function') ? GM_getResourceText : function(resourceName)
 			{
-				throw new Error('getResourceText: ( ' + resourceName + ' ), resource does not exist.');
+				throw new ReferenceError('getResourceText is not defined. ( ' + resourceName + ' )');
 			}),
 
 		});
@@ -352,6 +380,8 @@ try
 
 	if (!$ || $ == ({}))
 	{
+		//console.log(['wait jquery']);
+
 		(function(){
 			var head = document.getElementsByTagName('head')[0] || document.documentElement;
 			var script = document.createElement('script');
@@ -361,9 +391,114 @@ try
 
 			script.setAttribute('rel', 'jquery');
 
-			script.src = 'http://code.jquery.com/jquery-latest.js?KU201';
-
 			var _old_jq = {
+				'unsafeWindow': {
+					jQuery: unsafeWindow.jQuery,
+					'$': unsafeWindow.$,
+				},
+
+				/*
+				'window': {
+					jQuery: window.jQuery,
+					'$': window.$,
+				},
+				*/
+			};
+
+			//console.log(_old_jq);
+
+			var _done;
+			var text = '';
+
+			var _fn = function(event){
+				if (_done)
+				{
+					return;
+				}
+
+				if (event && (event.type == 'readystatechange' || event.name == 'readystatechange'))
+				{
+					if (script.readyState === 'loaded' || script.readyState === 'complete')
+					{
+
+					}
+					else
+					{
+						return;
+					}
+				}
+
+				_done = true;
+
+				if (text)
+				{
+					$ = Sandbox.jQuery = window.jQuery;
+				}
+				else
+				{
+					$ = Sandbox.jQuery = window.jQuery.noConflict(true);
+				}
+
+				//console.log(['jQuery', $, event]);
+
+				var name;
+
+				for (name in ['unsafeWindow', 'window'])
+				{
+					if (Sandbox[name] && Sandbox[name].jQuery === $)
+					{
+						Sandbox[name].jQuery = _old_jq[name].jQuery;
+					}
+					if (Sandbox[name] && Sandbox[name]['$'] === $)
+					{
+						Sandbox[name]['$'] = _old_jq[name]['$'];
+					}
+				}
+
+				try
+				{
+					head.removeChild(script);
+				}
+				catch(e)
+				{}
+
+				_fn_jquery.call(Sandbox);
+			};
+
+			try
+			{
+				text = GM_getResourceText('jquery');
+			}
+			catch(e)
+			{
+				//console.log(['userScriptFramework', e, e.message, e.columnNumber, e.lineNumber, e.fileName, e.stack]);
+			}
+
+			if (text)
+			{
+				script.async = false;
+				script.defer = false;
+
+				script.innerHTML = script.text = text;
+
+				var ret = eval(text);
+
+				_fn();
+			}
+			else
+			{
+				script.addEventListener('load', _fn, false);
+				script.addEventListener('readystatechange', _fn, false);
+
+				script.onreadystatechange = script.onload = _fn;
+
+				script.src = 'http://code.jquery.com/jquery-latest.js?KU201';
+
+				head.appendChild(script);
+			}
+
+			/*
+			console.log(['jQuery 2', $, {
 				'unsafeWindow': {
 					jQuery: unsafeWindow.jQuery,
 					'$': unsafeWindow.$,
@@ -373,33 +508,8 @@ try
 					jQuery: window.jQuery,
 					'$': window.$,
 				},
-			};
-
-			//console.log(_old_jq);
-
-			script.addEventListener('load', function(){
-				$ = Sandbox.jQuery = window.jQuery.noConflict(true);
-
-				var name;
-
-				for (name in ['unsafeWindow', 'window'])
-				{
-					if (Sandbox[name].jQuery === $)
-					{
-						Sandbox[name].jQuery = _old_jq[name].jQuery;
-					}
-					if (Sandbox[name]['$'] === $)
-					{
-						Sandbox[name]['$'] = _old_jq[name]['$'];
-					}
-				}
-
-				head.removeChild(script);
-
-				_fn_jquery.call(Sandbox);
-			}, false);
-
-			head.appendChild(script);
+			}, text, script]);
+			*/
 		})();
 	}
 	else
@@ -421,18 +531,21 @@ try
 	console.log(a());
 
 	console.log(2);
-	*/
+
 
 	console.log(['GM_log', typeof GM_log]);
 	console.log(['GM_openInTab', typeof GM_openInTab]);
-	console.log(['GM_xmlhttpRequest ', typeof GM_xmlhttpRequest ]);
+	console.log(['GM_xmlhttpRequest', typeof GM_xmlhttpRequest]);
+
+	console.log(['GM_getResourceText', typeof GM_getResourceText]);
 
 	console.log([__GM_STORAGE_PREFIX]);
+	*/
 
 }
 catch(e)
 {
-	return console.log(['userScriptFramework', e, e.message, e.columnNumber, e.lineNumber, e.fileName, e.stack]);
+	console.log(['userScriptFramework', e, e.message, e.columnNumber, e.lineNumber, e.fileName, e.stack]);
 }
 
 ;
