@@ -119,6 +119,22 @@ try
 				fn_clone: {},
 			},
 
+			isTampermonkey: function()
+			{
+				if (!GM_info)
+				{
+					return null;
+				}
+
+				// http://tampermonkey.net/documentation.php#GM_info
+				if (GM_info.scriptHandler === 'scriptHandler' && typeof GM_addValueChangeListener === 'function' && typeof GM_download === 'function')
+				{
+					return true;
+				}
+
+				return false;
+			},
+
 		});
 
 		Sandbox.userScriptFramework.prototype = userScriptFrameworkClass.fn;
@@ -155,7 +171,7 @@ try
 
 		//console.log([Sandbox, userScriptFramework, userScriptFramework.fn]);
 
-		for (name in userScriptFramework.fn)
+		for (name in Sandbox.GM.prototype)
 		{
 			if (name != 'fn')
 			{
@@ -284,6 +300,8 @@ try
 
 	var _fn_gm = function()
 	{
+		// https://greasyfork.org/zh-TW/scripts/6414-grant-none-shim/code
+
 		Sandbox.GM = {};
 
 		var __setupRequestEvent = function (aOpts, aReq, aEventName)
@@ -327,6 +345,8 @@ try
 			__GM_STORAGE_PREFIX: __GM_STORAGE_PREFIX,
 
 			_storage_: localStorage,
+
+			info: GM_info,
 
 			log: function(e)
 			{
@@ -618,6 +638,8 @@ try
 
 	console.log([__GM_STORAGE_PREFIX]);
 	*/
+
+	//console.log([Components, Components.classes, Components.ID("{77bf3650-1cd6-11da-8cd6-0800200c9a66}")]);
 
 }
 catch(e)
