@@ -340,6 +340,11 @@ try
 				return this;
 			}),
 
+			getResourceText: ((typeof GM_getResourceText === 'function') ? GM_getResourceText : function(resourceName)
+			{
+				throw new Error('getResourceText: ( ' + resourceName + ' ), resource does not exist.');
+			}),
+
 		});
 	};
 
