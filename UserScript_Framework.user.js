@@ -55,6 +55,8 @@ try
 
 	//return;
 
+	const __GM_STORAGE_PREFIX = ['', GM_info.script.namespace, GM_info.script.name, ''].join('***');
+
 (function(Sandbox, unsafeWindow, $, undefined){
 
 	if (Sandbox.userScriptFramework)
@@ -288,6 +290,11 @@ try
 				return style;
 			},
 
+			getResourceURL: ((typeof GM_getResourceURL === 'function') ? GM_getResourceURL : function(resourceName)
+			{
+				return 'greasemonkey-script:' + GM_info.uuid + '/' + resourceName;
+			}),
+
 		});
 	};
 
@@ -369,6 +376,8 @@ try
 	console.log(['GM_log', typeof GM_log]);
 	console.log(['GM_openInTab', typeof GM_openInTab]);
 	console.log(['GM_xmlhttpRequest ', typeof GM_xmlhttpRequest ]);
+
+	console.log([__GM_STORAGE_PREFIX]);
 
 }
 catch(e)
