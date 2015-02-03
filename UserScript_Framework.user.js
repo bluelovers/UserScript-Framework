@@ -286,6 +286,41 @@ try
 	{
 		Sandbox.GM = {};
 
+		var __setupRequestEvent = function (aOpts, aReq, aEventName)
+		{
+			if (!aOpts['on' + aEventName]) return;
+
+			aReq.addEventListener(aEventName, function(aEvent)
+			{
+				var responseState = {
+					responseText: aReq.responseText,
+					responseXML: aReq.responseXML,
+					readyState: aReq.readyState,
+					responseHeaders: null,
+					status: null,
+					statusText: null,
+					finalUrl: null
+				};
+				switch (aEventName)
+				{
+					case "progress":
+						responseState.lengthComputable = aEvent.lengthComputable;
+						responseState.loaded = aEvent.loaded;
+						responseState.total = aEvent.total;
+						break;
+					case "error":
+						break;
+					default:
+						if (4 != aReq.readyState) break;
+						responseState.responseHeaders = aReq.getAllResponseHeaders();
+						responseState.status = aReq.status;
+						responseState.statusText = aReq.statusText;
+						break;
+				}
+				aOpts['on' + aEventName](responseState);
+			});
+		}
+
 		Sandbox.GM.prototype = extend(Sandbox.GM,
 		{
 
@@ -371,6 +406,48 @@ try
 			getResourceText: ((typeof GM_getResourceText === 'function') ? GM_getResourceText : function(resourceName)
 			{
 				throw new ReferenceError('getResourceText is not defined. ( ' + resourceName + ' )');
+			}),
+
+			xmlhttpRequest: ((typeof GM_xmlhttpRequest === 'function') ? GM_xmlhttpRequest : function(aOpts)
+			{
+				if (this.prototype.xmlhttpRequest.__setupRequestEvent === undefined)
+				{
+					this.prototype.xmlhttpRequest.__setupRequestEvent = __setupRequestEvent;
+				}
+
+				var req = new XMLHttpRequest();
+
+				this.xmlhttpRequest.__setupRequestEvent.call(this, aOpts, req, 'abort');
+				this.xmlhttpRequest.__setupRequestEvent.call(this, aOpts, req, 'error');
+				this.xmlhttpRequest.__setupRequestEvent.call(this, aOpts, req, 'load');
+				this.xmlhttpRequest.__setupRequestEvent.call(this, aOpts, req, 'progress');
+				this.xmlhttpRequest.__setupRequestEvent.call(this, aOpts, req, 'readystatechange');
+
+				req.open(aOpts.method, aOpts.url, !aOpts.synchronous,
+					aOpts.user || '', aOpts.password || '');
+				if (aOpts.overrideMimeType)
+				{
+					req.overrideMimeType(aOpts.overrideMimeType);
+				}
+				if (aOpts.headers)
+				{
+					for (var prop in aOpts.headers)
+					{
+						if (Object.prototype.hasOwnProperty.call(aOpts.headers, prop))
+						{
+							req.setRequestHeader(prop, aOpts.headers[prop]);
+						}
+					}
+				}
+				var body = aOpts.data ? aOpts.data : null;
+				if (aOpts.binary)
+				{
+					return req.sendAsBinary(body);
+				}
+				else
+				{
+					return req.send(body);
+				}
 			}),
 
 		});
