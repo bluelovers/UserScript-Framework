@@ -56,7 +56,7 @@ try
 	console.log(['GM_getResourceText', typeof GM_getResourceText]);
 	*/
 
-	//console.log(0);
+	console.log(0);
 
 	//return;
 
@@ -140,6 +140,46 @@ try
 		Sandbox.userScriptFramework.prototype = userScriptFrameworkClass.fn;
 
 		userScriptFrameworkClass.fn.metadata = userScriptFrameworkClass.fn.info.script;
+
+		(function(_fn)
+		{
+
+			userScriptFrameworkClass.fn.getResourceURL = function(resourceName, skipError)
+			{
+				if (undefined === this._getResource(resourceName))
+				{
+					if (!skipError)
+					{
+						throw new ReferenceError('getResourceURL: resource "' + resourceName + '" does not exist.');
+					}
+
+					return;
+				}
+
+				return _fn.apply(this, arguments);
+			};
+
+		})(userScriptFrameworkClass.fn.getResourceURL);
+
+		(function(_fn)
+		{
+
+			userScriptFrameworkClass.fn.getResourceText = function(resourceName, skipError)
+			{
+				if (undefined === this._getResource(resourceName))
+				{
+					if (!skipError)
+					{
+						throw new ReferenceError('getResourceText: resource "' + resourceName + '" does not exist.');
+					}
+
+					return;
+				}
+
+				return _fn.apply(this, arguments);
+			};
+
+		})(userScriptFrameworkClass.fn.getResourceText);
 
 		extend(this, {
 
@@ -484,40 +524,6 @@ try
 			setClipboard: ((typeof GM_setClipboard === 'function') ? GM_setClipboard : throwNewErrorFn('setClipboard')),
 
 		});
-
-		(function(_fn)
-		{
-
-			Sandbox.GM.getResourceURL = Sandbox.GM.prototype.getResourceURL = function(resourceName, skipError)
-			{
-				if (undefined === this._getResource(resourceName))
-				{
-					!skipError && throw new ReferenceError('getResourceURL: resource "' + resourceName + '" does not exist.');
-
-					return;
-				}
-
-				return _fn.apply(this, arguments);
-			};
-
-		})(Sandbox.GM.prototype.getResourceURL);
-
-		(function(_fn)
-		{
-
-			Sandbox.GM.getResourceText = Sandbox.GM.prototype.getResourceText = function(resourceName, skipError)
-			{
-				if (undefined === this._getResource(resourceName))
-				{
-					!skipError && throw new ReferenceError('getResourceText: resource "' + resourceName + '" does not exist.');
-
-					return;
-				}
-
-				return _fn.apply(this, arguments);
-			};
-
-		})(Sandbox.GM.prototype.getResourceText);
 
 	};
 
