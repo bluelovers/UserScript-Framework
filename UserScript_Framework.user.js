@@ -69,7 +69,7 @@ try
 		return Sandbox.userScriptFramework;
 	}
 
-	var $UF, userScriptFramework;
+	var UF, userScriptFramework;
 
 	var _fn_env = function()
 	{
@@ -88,7 +88,7 @@ try
 	{
 		_fn_gm();
 
-		$UF = userScriptFramework = Sandbox.$UF = Sandbox.userScriptFramework = new userScriptFrameworkClass();
+		UF = userScriptFramework = Sandbox.UF = Sandbox.userScriptFramework = new userScriptFrameworkClass();
 
 		unsafeWindow.userScriptFramework = Sandbox.userScriptFramework;
 		unsafeWindow.Sandbox = Sandbox;
@@ -388,27 +388,27 @@ try
 
 			deleteValue: ((typeof GM_deleteValue === 'function') ? GM_deleteValue : function(name)
 			{
-				this._storage_.removeItem(__GM_STORAGE_PREFIX + name);
+				this._storage_.removeItem(this.__GM_STORAGE_PREFIX + name);
 
 				return this;
 			}),
 
 			getValue: ((typeof GM_getValue === 'function') ? GM_getValue : function(name, defaultValue)
 			{
-				var val = this._storage_.getItem(__GM_STORAGE_PREFIX + name);
+				var val = this._storage_.getItem(this.__GM_STORAGE_PREFIX + name);
 				if (null === val && 'undefined' != typeof defaultValue) return defaultValue;
 				return val;
 			}),
 
 			listValues: ((typeof GM_listValues === 'function') ? GM_listValues : function()
 			{
-				var prefixLen = __GM_STORAGE_PREFIX.length;
+				var prefixLen = this.__GM_STORAGE_PREFIX.length;
 				var values = [];
 				var i = 0;
 				for (var i = 0; i < this._storage_.length; i++)
 				{
 					var k = this._storage_.key(i);
-					if (k.substr(0, prefixLen) === __GM_STORAGE_PREFIX)
+					if (k.substr(0, prefixLen) === this.__GM_STORAGE_PREFIX)
 					{
 						values.push(k.substr(prefixLen));
 					}
@@ -418,15 +418,12 @@ try
 
 			setValue: ((typeof GM_setValue === 'function') ? GM_setValue : function(name, value)
 			{
-				this._storage_.setItem(__GM_STORAGE_PREFIX + name, value);
+				this._storage_.setItem(this.__GM_STORAGE_PREFIX + name, value);
 
 				return this;
 			}),
 
-			getResourceText: ((typeof GM_getResourceText === 'function') ? GM_getResourceText : function(resourceName)
-			{
-				throw new ReferenceError('getResourceText is not defined. ( ' + resourceName + ' )');
-			}),
+			getResourceText: ((typeof GM_getResourceText === 'function') ? GM_getResourceText : throwNewErrorFn('getResourceText')),
 
 			xmlhttpRequest: ((typeof GM_xmlhttpRequest === 'function') ? GM_xmlhttpRequest : function(aOpts)
 			{
@@ -470,6 +467,22 @@ try
 				}
 			}),
 
+			registerMenuCommand: ((typeof GM_registerMenuCommand === 'function') ? GM_registerMenuCommand : throwNewErrorFn('registerMenuCommand')),
+
+			setClipboard: ((typeof GM_setClipboard === 'function') ? GM_setClipboard : throwNewErrorFn('setClipboard')),
+
+		});
+	};
+
+	function throwNewErrorFn(name)
+	{
+		return extend(function()
+		{
+			throw new ReferenceError(name + ' is not defined.');
+		},
+		{
+			name: name,
+			isUndefined: true,
 		});
 	};
 
@@ -618,6 +631,8 @@ try
 
 })(Sandbox = typeof Sandbox === 'undefined' ? this : Sandbox, Sandbox.unsafeWindow = Sandbox.unsafeWindow || (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window), Sandbox.jQuery = Sandbox.jQuery || (typeof jQuery !== 'undefined' ? jQuery : void(0)));
 
+	console.log([Sandbox, Sandbox.jQuery, Sandbox.userScriptFramework, Sandbox.GM]);
+
 	/*
 	console.log(1);
 
@@ -640,6 +655,86 @@ try
 	*/
 
 	//console.log([Components, Components.classes, Components.ID("{77bf3650-1cd6-11da-8cd6-0800200c9a66}")]);
+
+	console.log([(function ()
+	{
+		var xmlHTTP = new XMLHttpRequest();
+		xmlHTTP.open('GET', 'http://www.xindm.cn/top_pic/01.gif', true);
+
+		// Must include this line - specifies the response type we want
+		xmlHTTP.responseType = 'arraybuffer';
+
+		xmlHTTP.onload = function(e)
+		{
+
+			var arr = new Uint8Array(this.response);
+
+
+			// Convert the int array to a binary string
+			// We have to use apply() as we are converting an *array*
+			// and String.fromCharCode() takes one or more single values, not
+			// an array.
+			var raw = String.fromCharCode.apply(null, arr);
+
+			// This works!!!
+			var b64 = btoa(raw);
+			var dataURL = "data:image/jpeg;base64," + b64;
+
+			//document.getElementById("image").src = dataURL;
+
+			console.log([dataURL]);
+		};
+
+		return xmlHTTP.send();
+	})()]);
+
+	// use this transport for "binary" data type
+jQuery.ajaxTransport("+binary", function(options, originalOptions, jqXHR){
+    // check for conditions and support for blob / arraybuffer response type
+    if (window.FormData && ((options.dataType && (options.dataType == 'binary')) || (options.data && ((window.ArrayBuffer && options.data instanceof ArrayBuffer) || (window.Blob && options.data instanceof Blob)))))
+    {
+        return {
+            // create new XMLHttpRequest
+            send: function(_, callback){
+				// setup all variables
+                var xhr = new XMLHttpRequest(),
+                    url = options.url,
+                    type = options.type,
+		    		// blob or arraybuffer. Default is blob
+                    dataType = options.responseType || "blob",
+                    data = options.data || null;
+
+                xhr.addEventListener('load', function(){
+                    var data = {};
+                    data[options.dataType] = xhr.response;
+		    		// make callback and send data
+                    callback(xhr.status, xhr.statusText, data, xhr.getAllResponseHeaders());
+                });
+
+                xhr.open(type, url, true);
+                xhr.responseType = dataType;
+                xhr.send(data);
+            },
+            abort: function(){
+                jqXHR.abort();
+            }
+        };
+    }
+});
+
+console.log([777, jQuery.ajax({
+  url: "http://www.xindm.cn/top_pic/02.gif",
+  type: "GET",
+  dataType: "binary",
+  processData: false,
+  done: function(result){
+	  // do something with binary data
+
+	  console.log([result]);
+  }
+})]);;
+
+
 
 }
 catch(e)
