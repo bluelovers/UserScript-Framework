@@ -139,6 +139,8 @@ try
 
 		Sandbox.userScriptFramework.prototype = userScriptFrameworkClass.fn;
 
+		userScriptFrameworkClass.fn.metadata = userScriptFrameworkClass.fn.info.script;
+
 		extend(this, {
 
 			options: {
@@ -187,13 +189,13 @@ try
 				if (typeof _fn !== 'undefined')
 				{
 					userScriptFramework._cache_.fn_old[_fn_name] = _fn;
+				}
 
-					if (!userScriptFramework.options.fn_clone[name])
-					{
-						userScriptFramework._cache_.fn_overwrite[_fn_name] = false;
+				if (name.substr(0, 1) === '_' || userScriptFramework.options.fn_overwrite[name] === false)
+				{
+					userScriptFramework._cache_.fn_overwrite[_fn_name] = false;
 
-						continue;
-					}
+					continue;
 				}
 
 				if (typeof userScriptFramework[name] === 'function')
@@ -226,6 +228,11 @@ try
 
 			var _fn = undefined, _fn_new = undefined, _fn_name = '';
 			var data = userScriptFramework.options.fn_clone[name];
+
+			if (!data || ((data instanceof Array) && data[1] === false))
+			{
+				continue;
+			}
 
 			if (typeof data === 'string')
 			{
@@ -337,7 +344,7 @@ try
 				}
 				aOpts['on' + aEventName](responseState);
 			});
-		}
+		};
 
 		Sandbox.GM.prototype = extend(Sandbox.GM,
 		{
@@ -381,9 +388,14 @@ try
 				return style;
 			},
 
+			_getResource: function(resourceName)
+			{
+				return this.info.script.resources[resourceName];
+			},
+
 			getResourceURL: ((typeof GM_getResourceURL === 'function') ? GM_getResourceURL : function(resourceName)
 			{
-				return 'greasemonkey-script:' + GM_info.uuid + '/' + resourceName;
+				return 'greasemonkey-script:' + this.info.uuid + '/' + resourceName;
 			}),
 
 			deleteValue: ((typeof GM_deleteValue === 'function') ? GM_deleteValue : function(name)
@@ -472,6 +484,41 @@ try
 			setClipboard: ((typeof GM_setClipboard === 'function') ? GM_setClipboard : throwNewErrorFn('setClipboard')),
 
 		});
+
+		(function(_fn)
+		{
+
+			Sandbox.GM.getResourceURL = Sandbox.GM.prototype.getResourceURL = function(resourceName, skipError)
+			{
+				if (undefined === this._getResource(resourceName))
+				{
+					!skipError && throw new ReferenceError('getResourceURL: resource "' + resourceName + '" does not exist.');
+
+					return;
+				}
+
+				return _fn.apply(this, arguments);
+			};
+
+		})(Sandbox.GM.prototype.getResourceURL);
+
+		(function(_fn)
+		{
+
+			Sandbox.GM.getResourceText = Sandbox.GM.prototype.getResourceText = function(resourceName, skipError)
+			{
+				if (undefined === this._getResource(resourceName))
+				{
+					!skipError && throw new ReferenceError('getResourceText: resource "' + resourceName + '" does not exist.');
+
+					return;
+				}
+
+				return _fn.apply(this, arguments);
+			};
+
+		})(Sandbox.GM.prototype.getResourceText);
+
 	};
 
 	function throwNewErrorFn(name)
@@ -632,6 +679,8 @@ try
 })(Sandbox = typeof Sandbox === 'undefined' ? this : Sandbox, Sandbox.unsafeWindow = Sandbox.unsafeWindow || (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window), Sandbox.jQuery = Sandbox.jQuery || (typeof jQuery !== 'undefined' ? jQuery : void(0)));
 
 	console.log([Sandbox, Sandbox.jQuery, Sandbox.userScriptFramework, Sandbox.GM]);
+
+	console.log([Sandbox.userScriptFramework.getResourceURL, Sandbox.userScriptFramework.getResourceURL()]);
 
 	/*
 	console.log(1);
