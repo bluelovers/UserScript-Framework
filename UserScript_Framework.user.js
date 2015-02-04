@@ -46,20 +46,6 @@
 try
 {
 
-	//GM_addStyle('a { color: red; }');
-
-	/*
-	console.log(['GM_log', typeof GM_log]);
-	console.log(['GM_openInTab', typeof GM_openInTab]);
-	console.log(['GM_xmlhttpRequest', typeof GM_xmlhttpRequest]);
-	console.log(['GM_addStyle', typeof GM_addStyle]);
-	console.log(['GM_getResourceText', typeof GM_getResourceText]);
-	*/
-
-	console.log(0);
-
-	//return;
-
 	const __GM_STORAGE_PREFIX = ['', GM_info.script.namespace, GM_info.script.name, ''].join('***');
 
 (function(Sandbox, unsafeWindow, $, undefined){
@@ -119,6 +105,8 @@ try
 				fn_clone: {},
 			},
 
+			_parent: Sandbox.GM,
+
 			isTampermonkey: function()
 			{
 				if (!GM_info)
@@ -133,6 +121,40 @@ try
 				}
 
 				return false;
+			},
+
+			addScript: function(source, head)
+			{
+				var head = head || document.getElementsByTagName('head')[0] || document.documentElement;
+				if (!head)
+				{
+					return;
+				}
+
+				var elem = document.createElement('style');
+				elem.type = 'text/javascript';
+
+				//elem.async = true;
+
+				if (typeof source !== 'string')
+				{
+					extend(elem, source);
+				}
+				else if (0)
+				{
+					elem.async = false;
+					elem.defer = false;
+
+					elem.text = source;
+				}
+				else
+				{
+					elem.src = source;
+				}
+
+				head.appendChild(elem);
+
+				return elem;
 			},
 
 		});
@@ -240,7 +262,7 @@ try
 
 				if (typeof userScriptFramework[name] === 'function')
 				{
-					if (typeof _fn === 'undefined')
+					if (typeof _fn === 'undefined' || userScriptFramework.options.fn_overwrite[name] === true)
 					{
 						_fn_new = userScriptFramework[name];
 					}
@@ -708,88 +730,6 @@ try
 
 	console.log([__GM_STORAGE_PREFIX]);
 	*/
-
-	//console.log([Components, Components.classes, Components.ID("{77bf3650-1cd6-11da-8cd6-0800200c9a66}")]);
-
-	console.log([(function ()
-	{
-		var xmlHTTP = new XMLHttpRequest();
-		xmlHTTP.open('GET', 'http://www.xindm.cn/top_pic/01.gif', true);
-
-		// Must include this line - specifies the response type we want
-		xmlHTTP.responseType = 'arraybuffer';
-
-		xmlHTTP.onload = function(e)
-		{
-
-			var arr = new Uint8Array(this.response);
-
-
-			// Convert the int array to a binary string
-			// We have to use apply() as we are converting an *array*
-			// and String.fromCharCode() takes one or more single values, not
-			// an array.
-			var raw = String.fromCharCode.apply(null, arr);
-
-			// This works!!!
-			var b64 = btoa(raw);
-			var dataURL = "data:image/jpeg;base64," + b64;
-
-			//document.getElementById("image").src = dataURL;
-
-			console.log([dataURL]);
-		};
-
-		return xmlHTTP.send();
-	})()]);
-
-	// use this transport for "binary" data type
-jQuery.ajaxTransport("+binary", function(options, originalOptions, jqXHR){
-    // check for conditions and support for blob / arraybuffer response type
-    if (window.FormData && ((options.dataType && (options.dataType == 'binary')) || (options.data && ((window.ArrayBuffer && options.data instanceof ArrayBuffer) || (window.Blob && options.data instanceof Blob)))))
-    {
-        return {
-            // create new XMLHttpRequest
-            send: function(_, callback){
-				// setup all variables
-                var xhr = new XMLHttpRequest(),
-                    url = options.url,
-                    type = options.type,
-		    		// blob or arraybuffer. Default is blob
-                    dataType = options.responseType || "blob",
-                    data = options.data || null;
-
-                xhr.addEventListener('load', function(){
-                    var data = {};
-                    data[options.dataType] = xhr.response;
-		    		// make callback and send data
-                    callback(xhr.status, xhr.statusText, data, xhr.getAllResponseHeaders());
-                });
-
-                xhr.open(type, url, true);
-                xhr.responseType = dataType;
-                xhr.send(data);
-            },
-            abort: function(){
-                jqXHR.abort();
-            }
-        };
-    }
-});
-
-console.log([777, jQuery.ajax({
-  url: "http://www.xindm.cn/top_pic/02.gif",
-  type: "GET",
-  dataType: "binary",
-  processData: false,
-  done: function(result){
-	  // do something with binary data
-
-	  console.log([result]);
-  }
-})]);;
-
-
 
 }
 catch(e)
