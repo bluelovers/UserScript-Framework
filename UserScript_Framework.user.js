@@ -123,9 +123,9 @@ try
 				return false;
 			},
 
-			addScript: function(source, head)
+			addScript: function(source, options)
 			{
-				var head = head || document.getElementsByTagName('head')[0] || document.documentElement;
+				var head = options || document.getElementsByTagName('head')[0] || document.documentElement;
 				if (!head)
 				{
 					return;
