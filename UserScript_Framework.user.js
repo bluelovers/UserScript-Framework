@@ -47,12 +47,13 @@
 // ==/UserScript==
 try
 {
+	const __TEST__ = true;
 
 	const __GM_STORAGE_PREFIX = ['', GM_info.script.namespace, GM_info.script.name, ''].join('***');
 
 	const LF = "\n";
 
-	console.log([this, __GM_STORAGE_PREFIX, LF]);
+	__TEST__ && console.log([this, __GM_STORAGE_PREFIX, LF]);
 
 	/*
 	var userScriptFramework = userScriptFramework || { options: {}, };
@@ -69,9 +70,12 @@ try
 	}
 
 	var UF = userScriptFramework = Sandbox.userScriptFramework || {};
+	var ufClasses;
 
 	var _fn_env = function()
 	{
+		_fn_hack.call(Sandbox);
+
 		Sandbox.unsafeWindow = unsafeWindow;
 		Sandbox.window = window;
 
@@ -80,8 +84,6 @@ try
 
 		//Sandbox.a = function(){return 11111;};
 	};
-
-	_fn_env.call(Sandbox);
 
 	var _fn_init = function()
 	{
@@ -120,7 +122,7 @@ try
 
 		extend(userScriptFrameworkClass, Sandbox.userScriptFramework, {});
 
-		userScriptFrameworkClass.fn = userScriptFrameworkClass.prototype.fn = extend(userScriptFrameworkClass.prototype, Sandbox.GM.prototype, Sandbox.userScriptFramework.fn || Sandbox.UF.fn, {
+		userScriptFrameworkClass.fn = userScriptFrameworkClass.prototype.fn = extend(userScriptFrameworkClass.prototype, Sandbox.GM, Sandbox.userScriptFramework.fn || Sandbox.UF.fn, {
 
 			isReady: true,
 
@@ -304,7 +306,7 @@ try
 
 		userScriptFrameworkClass.fn.utils.__proto__ = userScriptFrameworkClass.fn;
 
-		userScriptFrameworkClass.fn.classes = extend(userScriptFrameworkClass.fn.classes, {
+		ufClasses = userScriptFrameworkClass.fn.classes = extend(userScriptFrameworkClass.fn.classes, {
 
 			xmlhttpRequestJQueryClass: xmlhttpRequestJQueryClass,
 
@@ -384,94 +386,183 @@ try
 	 **/
 	function xmlhttpRequestJQueryClass(options)
 	{
-		extend(this, {
+		const UNSENT = 0;
+		const OPENED = 1;
+		const HEADERS_RECEIVED = 2;
+		const LOADING = 3;
+		const DONE = 4;
+
+		extend(this,
+		{
+
 			type: null,
 			url: null,
 			async: null,
 			username: null,
 			password: null,
-			status: null,
-			headers: {},
-			readyState: null,
+
+			headers:
+			{},
+
 		}, options);
 
-		this.prototype.open = function(type, url, async, username, password)
+		extend(xmlhttpRequestJQueryClass.prototype, ufClasses['Object'].prototype,
 		{
-			this.type = type ? type : null;
-			this.url = url ? url : null;
-			this.async = async ? async : null;
-			this.username = username ? username : null;
-			this.password = password ? password : null;
-			this.readyState = 1;
 
-			return this;
-		};
+			status: null,
+			statusText: null,
 
-		this.prototype.setRequestHeader = function(name, value)
-		{
-			this.headers[name] = value;
+			context: null,
 
-			return this;
-		};
+			readyState: UNSENT,
 
-		this.prototype.abort = function()
-		{
-			this.readyState = 0;
+			finalUrl: null,
 
-			return this;
-		};
+			data: null,
 
-		this.prototype.getResponseHeader = function(name)
-		{
-			return this.headers[name];
-		};
+			response: null,
+			responseHeaders: null,
+			responseText: null,
+			responseXML: null,
+			responseURL: null,
 
-		this.prototype.send = function(data)
-		{
-			this.data = data;
-			var that = this;
+			data: null,
 
-			UF.xmlhttpRequest(
+			open: function(type, url, async, username, password)
 			{
-				method: this.type,
-				url: this.url,
-				headers: this.headers,
-				data: this.data,
-				onload: function(rsp)
-				{
-					// Populate wrapper object with returned data
-					for (k in rsp)
-					{
-						that[k] = rsp[k];
-					}
-				},
-				onerror: function(rsp)
-				{
-					for (k in rsp)
-					{
-						that[k] = rsp[k];
-					}
-				},
-				onreadystatechange: function(rsp)
-				{
-					for (k in rsp)
-					{
-						that[k] = rsp[k];
-					}
-				}
-			});
+				this.type = type ? type : null;
+				this.url = url ? url : null;
+				this.async = async ? async : null;
+				this.username = username ? username : null;
+				this.password = password ? password : null;
+				this.readyState = 1;
 
-			return this;
-		};
+				return this;
+			},
+
+			setRequestHeader: function(name, value)
+			{
+				this.headers[name] = value;
+
+				return this;
+			},
+
+			abort: function()
+			{
+				this.readyState = 0;
+
+				return this;
+			},
+
+			getAllResponseHeaders: function(name)
+			{
+				if (this.readyState != 4) return '';
+				return this.responseHeaders;
+			},
+
+			getResponseHeader: function(name)
+			{
+//				return this.headers[name];
+
+				var regexp = new RegExp('^' + name + ': (.*)$', 'im');
+				var match = regexp.exec(this.responseHeaders);
+				if (match)
+				{
+					return match[1];
+				}
+				return '';
+			},
+
+			getOptions: function()
+			{
+				return this.getOwnPropertys(true);
+			},
+
+			clone: function()
+			{
+				return new this.constructor(this.getOptions());
+			},
+
+			send: function(data)
+			{
+				this.data = data;
+				var that = this;
+
+				var options = extend(
+				{}, this.getOwnPropertys(true),
+				{
+
+					method: this.type,
+
+//					url: this.url,
+//					headers: this.headers,
+//					data: this.data,
+
+					onload: function(rsp)
+					{
+						// Populate wrapper object with returned data
+						for (k in rsp)
+						{
+							that[k] = rsp[k];
+						}
+					},
+
+					onerror: function(rsp)
+					{
+						for (k in rsp)
+						{
+							that[k] = rsp[k];
+						}
+					},
+
+					onreadystatechange: function(rsp)
+					{
+						for (k in rsp)
+						{
+							that[k] = rsp[k];
+						}
+					},
+
+				});
+
+				UF.xmlhttpRequest(options);
+
+				return this;
+			},
+
+		});
+
 	};
 
 	var _fn_done = function()
 	{
+		try
+		{
+			var _defineProperties = [];
+
+			_defineProperties[0] = {
+
+				info: {
+					writable: false,
+					enumerable: false,
+					configurable: false,
+				},
+
+			};
+
+			Object.defineProperties(Sandbox.GM, _defineProperties[0]);
+			Object.defineProperties(userScriptFrameworkClass.fn, _defineProperties[0]);
+		}
+		catch(e)
+		{
+			console.log([e]);
+		}
+
 		var name;
 
 		//console.log([Sandbox, userScriptFramework, userScriptFramework.fn]);
 
-		for (name in Sandbox.GM.prototype)
+		for (name in Sandbox.GM)
 		{
 			if (name != 'fn')
 			{
@@ -661,7 +752,7 @@ try
 	{
 		// https://greasyfork.org/zh-TW/scripts/6414-grant-none-shim/code
 
-		Sandbox.GM = {};
+		Sandbox.GM = new Object;
 
 		var __setupRequestEvent = function (aOpts, aReq, aEventName)
 		{
@@ -698,7 +789,7 @@ try
 			});
 		};
 
-		Sandbox.GM.prototype = extend(Sandbox.GM,
+		extend(Sandbox.GM,
 		{
 
 			__GM_STORAGE_PREFIX: __GM_STORAGE_PREFIX,
@@ -836,7 +927,6 @@ try
 			setClipboard: ((typeof GM_setClipboard === 'function') ? GM_setClipboard : throwNewErrorFn('setClipboard')),
 
 		});
-
 	};
 
 	function throwNewErrorFn(name)
@@ -851,6 +941,43 @@ try
 		});
 	};
 
+	function _fn_hack()
+	{
+
+		ufClasses = userScriptFrameworkClass.prototype.classes = extend(userScriptFrameworkClass.prototype.classes,
+		{
+
+			'Object': extend(true, function() {},
+			{
+				prototype:
+				{
+					getOwnPropertys: function(mode)
+					{
+						var name;
+						var options = {};
+
+						var _proto = this.prototype || this.__proto__;
+
+						mode = !mode;
+
+						for (name in this)
+						{
+							if (this.hasOwnProperty(name) && (mode || !(name in _proto)))
+							{
+								options[name] = this[name];
+							}
+						}
+
+						return options;
+					},
+				},
+			}),
+
+		});
+
+	};
+
+	_fn_env.call(Sandbox);
 	_fn_init.call(Sandbox);
 
 	if (!$ || $ == ({}))
@@ -969,32 +1096,39 @@ try
 
 })(Sandbox = typeof Sandbox === 'undefined' ? this : Sandbox, Sandbox.unsafeWindow = Sandbox.unsafeWindow || (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window), Sandbox.jQuery = Sandbox.jQuery || (typeof jQuery !== 'undefined' ? jQuery : void(0)));
 
-	console.log([Sandbox, Sandbox.jQuery, Sandbox.UF, Sandbox.GM]);
+	if (__TEST__)
+	{
 
-	console.log([Sandbox.UF.fn.utils._parseDomOption({a: 1})]);
+		console.log([Sandbox, Sandbox.jQuery, Sandbox.UF, Sandbox.GM]);
 
-	console.log([Sandbox.userScriptFramework.getResourceURL, Sandbox.userScriptFramework.getResourceURL()]);
+	//	console.log([Sandbox.UF.fn.utils._parseDomOption({a: 1})]);
 
-	/*
-	console.log(1);
+		console.log([a = Sandbox.UF.xhrJQuery(), a.getOwnPropertys(true), a.send(false), a.getOwnPropertys(true), ('data' in a.__proto__), a.clone()]);
 
-	console.log([Sandbox, Sandbox.unsafeWindow, Sandbox.window]);
+		console.log([Sandbox.userScriptFramework.getResourceURL, Sandbox.userScriptFramework.getResourceURL()]);
 
-	console.log([Sandbox.$, Sandbox.jQuery, Sandbox.userScriptFramework]);
+		/*
+		console.log(1);
 
-	console.log(a());
+		console.log([Sandbox, Sandbox.unsafeWindow, Sandbox.window]);
 
-	console.log(2);
+		console.log([Sandbox.$, Sandbox.jQuery, Sandbox.userScriptFramework]);
+
+		console.log(a());
+
+		console.log(2);
 
 
-	console.log(['GM_log', typeof GM_log]);
-	console.log(['GM_openInTab', typeof GM_openInTab]);
-	console.log(['GM_xmlhttpRequest', typeof GM_xmlhttpRequest]);
+		console.log(['GM_log', typeof GM_log]);
+		console.log(['GM_openInTab', typeof GM_openInTab]);
+		console.log(['GM_xmlhttpRequest', typeof GM_xmlhttpRequest]);
 
-	console.log(['GM_getResourceText', typeof GM_getResourceText]);
+		console.log(['GM_getResourceText', typeof GM_getResourceText]);
 
-	console.log([__GM_STORAGE_PREFIX]);
-	*/
+		console.log([__GM_STORAGE_PREFIX]);
+		*/
+
+	}
 
 }
 catch(e)
