@@ -261,7 +261,7 @@ try
 
 		userScriptFrameworkClass.fn.utils = extend(userScriptFrameworkClass.fn.utils, {
 
-			_parseDomOption: function(data)
+			_parseDomOption: function(data, source)
 			{
 				var options = {};
 
@@ -297,7 +297,10 @@ try
 					}
 				}
 
-				options.target = target;
+				options = extend(options, {
+					target: target,
+					source: source,
+				});
 
 				return options;
 			},
