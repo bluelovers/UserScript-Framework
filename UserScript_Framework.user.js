@@ -48,6 +48,8 @@ try
 
 	const __GM_STORAGE_PREFIX = ['', GM_info.script.namespace, GM_info.script.name, ''].join('***');
 
+	const LF = "\n";
+
 (function(Sandbox, unsafeWindow, $, undefined){
 
 	if (Sandbox.userScriptFramework)
@@ -90,8 +92,8 @@ try
 	{
 		if ($)
 		{
-			extend = $.extend || extend;
-			isPlainObject = $.isPlainObject || isPlainObject;
+			UF.fn.extend = extend = $.extend || extend;
+			UF.fn.isPlainObject = isPlainObject = $.isPlainObject || isPlainObject;
 		}
 
 		//Sandbox.userScriptFramework.log(jQuery);
@@ -101,7 +103,7 @@ try
 	{
 		extend(userScriptFrameworkClass, Sandbox.userScriptFramework, {});
 
-		userScriptFrameworkClass.fn = userScriptFrameworkClass.prototype.fn = extend(userScriptFrameworkClass.prototype, Sandbox.GM.prototype, Sandbox.userScriptFramework.fn, {
+		userScriptFrameworkClass.fn = userScriptFrameworkClass.prototype.fn = extend(userScriptFrameworkClass.prototype, Sandbox.GM.prototype, Sandbox.userScriptFramework.fn || Sandbox.UF.fn, {
 
 			_cache_: {
 				fn_overwrite: {},
@@ -135,6 +137,11 @@ try
 				if (!target)
 				{
 					return;
+				}
+
+				if (this.isArray(source))
+				{
+					source = source.join(LF);
 				}
 
 				return this._parent_.addStyle.call(this, source, target);
@@ -184,6 +191,37 @@ try
 				return elem;
 			},
 
+			isArray: ($ && $.isArray) ? $.isArray : (function(source)
+			{
+				if ($ && $.isArray)
+				{
+					return $.isArray(source);
+				}
+				else if (Array.isArray)
+				{
+					return Array.isArray(source);
+				}
+
+				return Object.prototype.toString.call(source) === '[object Array]';
+			}),
+
+			tryCatch: function(_try, _catch)
+			{
+				try
+				{
+					return _try();
+				}
+				catch(e)
+				{
+					(_catch || this.log)(e);
+
+					return false;
+				}
+			},
+
+			extend: extend,
+
+			isPlainObject: isPlainObject,
 
 		});
 
@@ -195,7 +233,7 @@ try
 
 				var target = document.getElementsByTagName('head')[0] || document.documentElement;
 
-				if (data)
+				if (data !== undefined)
 				{
 					if (isPlainObject(data))
 					{
@@ -205,7 +243,23 @@ try
 					}
 					else
 					{
-						target = data;
+						target = data || target;
+					}
+
+					if (target == -1)
+					{
+						UF.tryCatch(function(){
+
+							target = $('style, link[rel="stylesheet"], link[type="text/css"]').eq(-1).parents('head, body').eq(-1)[0];
+
+						}, function(e){
+							var _dom = document.querySelectorAll('style, link[rel="stylesheet"], link[type="text/css"]');
+
+							if (_dom.length)
+							{
+								target = _dom[_dom.length - 1].parentNode || target;
+							}
+						});
 					}
 				}
 
@@ -218,7 +272,7 @@ try
 
 		});
 
-		Sandbox.userScriptFramework.prototype = userScriptFrameworkClass.fn;
+		Sandbox.UF.prototype = Sandbox.userScriptFramework.prototype = userScriptFrameworkClass.fn;
 
 		userScriptFrameworkClass.fn.metadata = userScriptFrameworkClass.fn.info.script;
 
