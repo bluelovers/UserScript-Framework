@@ -488,6 +488,14 @@ try
 				this.data = data;
 				var that = this;
 
+				var _fn = function(){};
+
+				var callback = {
+					'onload': this.onload || _fn,
+					'onerror': this.onerror || _fn,
+					'onreadystatechange': this.onreadystatechange || _fn,
+				};
+
 				var options = extend(
 				{}, this.getOwnPropertys(true),
 				{
@@ -505,6 +513,8 @@ try
 						{
 							that[k] = rsp[k];
 						}
+
+						callback['onload'].apply(that, arguments);
 					},
 
 					onerror: function(rsp)
@@ -513,6 +523,8 @@ try
 						{
 							that[k] = rsp[k];
 						}
+
+						callback['onerror'].apply(that, arguments);
 					},
 
 					onreadystatechange: function(rsp)
@@ -521,6 +533,8 @@ try
 						{
 							that[k] = rsp[k];
 						}
+
+						callback['onreadystatechange'].apply(that, arguments);
 					},
 
 				});
@@ -943,7 +957,6 @@ try
 
 	function _fn_hack()
 	{
-
 		ufClasses = userScriptFrameworkClass.prototype.classes = extend(userScriptFrameworkClass.prototype.classes,
 		{
 
@@ -973,8 +986,50 @@ try
 				},
 			}),
 
-		});
+			/*
+			'Function': extend(true, function() {},
+			{
+				prototype:
+				{
+					// http://upshots.org/javascript/jquery-test-if-element-is-in-viewport-visible-on-screen
+					debounce: function(threshold)
+					{
+						var callback = this;
+						var timeout;
+						return function()
+						{
+							var context = this,
+								params = arguments;
+							clearTimeout(timeout);
+							timeout = setTimeout(function()
+							{
+								callback.apply(context, params);
+							}, threshold);
+						};
+					},
 
+					// http://stackoverflow.com/questions/1833588/javascript-clone-a-function
+					clone: function()
+					{
+						var that = this;
+						var temp = function temporary()
+						{
+							return that.apply(this, arguments);
+						};
+						for (var key in this)
+						{
+							if (this.hasOwnProperty(key))
+							{
+								temp[key] = this[key];
+							}
+						}
+						return temp;
+					},
+				},
+			}),
+			*/
+
+		});
 	};
 
 	_fn_env.call(Sandbox);
