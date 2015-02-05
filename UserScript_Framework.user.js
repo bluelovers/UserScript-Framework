@@ -41,6 +41,8 @@
 // require		http://code.jquery.com/jquery-latest.js?KU201
 //
 // @resource	jquery http://code.jquery.com/jquery-latest.js?KU201
+// @resource	jMod https://github.com/jgjake2/myUserJS-API/raw/master/jMod/current/jMod.full.js?KU201
+//
 //
 // ==/UserScript==
 try
@@ -223,6 +225,33 @@ try
 
 			isPlainObject: isPlainObject,
 
+			/**
+				Usage:
+				 	$.ajax(
+				 	{
+				 		url: '/p/',
+				 		xhr: function()
+				 		{
+				 			return userScriptFramework.xhr();
+				 		},
+				 		type: 'POST',
+				 		success: function(val) {
+
+				 		}
+				 	});
+			 **/
+			xhrJQuery: function(options)
+			{
+				var xhr = new this.fn.classes.xmlhttpRequestJQueryClass();
+
+				if (options)
+				{
+					extend(xhr, options);
+				}
+
+				return xhr;
+			},
+
 		});
 
 		userScriptFrameworkClass.fn.utils = extend(userScriptFrameworkClass.fn.utils, {
@@ -265,10 +294,16 @@ try
 
 				options.target = target;
 
-				console.log([data, options]);
+//				console.log([data, options]);
 
 				return options;
 			},
+
+		});
+
+		userScriptFrameworkClass.fn.classes = extend(userScriptFrameworkClass.fn.classes, {
+
+			xmlhttpRequestJQueryClass: GM_xmlhttpRequestJQueryClass,
 
 		});
 
@@ -342,6 +377,79 @@ try
 		//console.log([this, this.fn, userScriptFramework, userScriptFramework.fn]);
 
 		return this;
+	};
+
+	function GM_xmlhttpRequestJQueryClass()
+	{
+		this.type = null;
+		this.url = null;
+		this.async = null;
+		this.username = null;
+		this.password = null;
+		this.status = null;
+		this.headers = {};
+		this.readyState = null;
+
+		this.prototype.open = function(type, url, async, username, password)
+		{
+			this.type = type ? type : null;
+			this.url = url ? url : null;
+			this.async = async ? async : null;
+			this.username = username ? username : null;
+			this.password = password ? password : null;
+			this.readyState = 1;
+		};
+
+		this.prototype.setRequestHeader = function(name, value)
+		{
+			this.headers[name] = value;
+		};
+
+		this.prototype.abort = function()
+		{
+			this.readyState = 0;
+		};
+
+		this.prototype.getResponseHeader = function(name)
+		{
+			return this.headers[name];
+		};
+
+		this.prototype.send = function(data)
+		{
+			this.data = data;
+			var that = this;
+
+			UF.xmlhttpRequest(
+			{
+				method: this.type,
+				url: this.url,
+				headers: this.headers,
+				data: this.data,
+				onload: function(rsp)
+				{
+					// Populate wrapper object with returned data
+					for (k in rsp)
+					{
+						that[k] = rsp[k];
+					}
+				},
+				onerror: function(rsp)
+				{
+					for (k in rsp)
+					{
+						that[k] = rsp[k];
+					}
+				},
+				onreadystatechange: function(rsp)
+				{
+					for (k in rsp)
+					{
+						that[k] = rsp[k];
+					}
+				}
+			});
+		};
 	};
 
 	var _fn_done = function()
