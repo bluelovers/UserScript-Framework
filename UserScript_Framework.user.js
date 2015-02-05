@@ -485,6 +485,12 @@ try
 					case 'encoding':
 						name = 'Accept-Encoding';
 						break;
+					case 'cors':
+						name = {
+							'Access-Control-Allow-Origin': value,
+							'Origin': value,
+						};
+						break;
 				}
 
 				return {
