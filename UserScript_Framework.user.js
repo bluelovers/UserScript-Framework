@@ -247,12 +247,7 @@ try
 			 **/
 			xhrJQuery: function(options)
 			{
-				var xhr = new this.fn.classes.xmlhttpRequestJQueryClass();
-
-				if (options)
-				{
-					extend(xhr, options);
-				}
+				var xhr = new this.fn.classes.xmlhttpRequestJQueryClass(options);
 
 				return xhr;
 			},
@@ -387,16 +382,18 @@ try
 	 * http://ryangreenberg.com/archives/2010/03/greasemonkey_jquery.php
 	 * https://gist.github.com/Acorn-zz/1060206
 	 **/
-	function xmlhttpRequestJQueryClass()
+	function xmlhttpRequestJQueryClass(options)
 	{
-		this.type = null;
-		this.url = null;
-		this.async = null;
-		this.username = null;
-		this.password = null;
-		this.status = null;
-		this.headers = {};
-		this.readyState = null;
+		extend(this, {
+			type: null,
+			url: null,
+			async: null,
+			username: null,
+			password: null,
+			status: null,
+			headers: {},
+			readyState: null,
+		}, options);
 
 		this.prototype.open = function(type, url, async, username, password)
 		{
@@ -406,16 +403,22 @@ try
 			this.username = username ? username : null;
 			this.password = password ? password : null;
 			this.readyState = 1;
+
+			return this;
 		};
 
 		this.prototype.setRequestHeader = function(name, value)
 		{
 			this.headers[name] = value;
+
+			return this;
 		};
 
 		this.prototype.abort = function()
 		{
 			this.readyState = 0;
+
+			return this;
 		};
 
 		this.prototype.getResponseHeader = function(name)
@@ -457,6 +460,8 @@ try
 					}
 				}
 			});
+
+			return this;
 		};
 	};
 
