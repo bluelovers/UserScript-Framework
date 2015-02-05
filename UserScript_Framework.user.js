@@ -63,7 +63,7 @@ try
 		Sandbox.window = window;
 
 		Sandbox.jQuery = $;
-		$UF = userScriptFramework = Sandbox.$UF = Sandbox.userScriptFramework = Sandbox.userScriptFramework || {};
+		UF = userScriptFramework = Sandbox.UF = Sandbox.userScriptFramework = Sandbox.userScriptFramework || {};
 
 		//Sandbox.a = function(){return 11111;};
 	};
@@ -88,7 +88,11 @@ try
 
 	var _fn_jquery = function()
 	{
-		extend = $.extend || extend;
+		if ($)
+		{
+			extend = $.extend || extend;
+			isPlainObject = $.isPlainObject || isPlainObject;
+		}
 
 		//Sandbox.userScriptFramework.log(jQuery);
 	};
@@ -105,7 +109,7 @@ try
 				fn_clone: {},
 			},
 
-			_parent: Sandbox.GM,
+			_parent_: Sandbox.GM,
 
 			isTampermonkey: function()
 			{
@@ -123,22 +127,33 @@ try
 				return false;
 			},
 
-			addScript: function(source, options)
+			addScript: function(source, target)
 			{
-				var head = options || document.getElementsByTagName('head')[0] || document.documentElement;
-				if (!head)
+
+				var options = this.utils._parseDomOption(target);
+				var target = options.target;
+
+				if (!target)
 				{
 					return;
 				}
 
-				var elem = document.createElement('style');
+				var elem = document.createElement('script');
 				elem.type = 'text/javascript';
 
 				//elem.async = true;
 
+				if (options.success)
+				{
+					elem.onreadystatechange = elem.onload = options.success;
+
+					elem.addEventListener('load', options.success, false);
+					elem.addEventListener('readystatechange', options.success, false);
+				}
+
 				if (typeof source !== 'string')
 				{
-					extend(elem, source);
+					extend(elem, options, source);
 				}
 				else if (0)
 				{
@@ -152,9 +167,41 @@ try
 					elem.src = source;
 				}
 
-				head.appendChild(elem);
+				target.appendChild(elem);
 
 				return elem;
+			},
+
+
+		});
+
+		userScriptFrameworkClass.fn.utils = extend(userScriptFrameworkClass.fn.utils, {
+
+			_parseDomOption: function(data)
+			{
+				var options = {};
+
+				var target = document.getElementsByTagName('head')[0] || document.documentElement;
+
+				if (data)
+				{
+					if (isPlainObject(data))
+					{
+						extend(options, data);
+
+						target = data.target || target;
+					}
+					else
+					{
+						target = data;
+					}
+				}
+
+				options.target = target;
+
+				console.log([data, options]);
+
+				return options;
 			},
 
 		});
@@ -223,6 +270,8 @@ try
 			},
 
 		});
+
+		this.fn.utils.constructor = this;
 
 		//console.log([this, this.fn, userScriptFramework, userScriptFramework.fn]);
 
@@ -365,6 +414,16 @@ try
 		}
 
 		return target;
+	});
+
+	var isPlainObject = ($ && $.isPlainObject) ? $.isPlainObject : (function(obj)
+	{
+		if (!obj || typeof obj !== 'object' || obj.nodeType || obj == window)
+		{
+			return false;
+		}
+
+		return true;
 	});
 
 	var _fn_gm = function()
@@ -568,13 +627,7 @@ try
 		//console.log(['wait jquery']);
 
 		(function(){
-			var head = document.getElementsByTagName('head')[0] || document.documentElement;
-			var script = document.createElement('script');
-
-			script.type = 'text/javascript';
-			script.async = true;
-
-			script.setAttribute('rel', 'jquery');
+			var head, script = {}, text, src;
 
 			var _old_jq = {
 				'unsafeWindow': {
@@ -590,12 +643,13 @@ try
 				*/
 			};
 
-			//console.log(_old_jq);
-
 			var _done;
 			var text = '';
 
 			var _fn = function(event){
+
+//				console.log(this, script, event, $, window.jQuery, unsafeWindow.jQuery);
+
 				if (_done)
 				{
 					return;
@@ -615,16 +669,9 @@ try
 
 				_done = true;
 
-				if (text)
-				{
-					$ = Sandbox.jQuery = window.jQuery;
-				}
-				else
-				{
-					$ = Sandbox.jQuery = window.jQuery.noConflict(true);
-				}
+				$ = userScriptFramework.$ = Sandbox.jQuery = (window.jQuery || unsafeWindow.jQuery).noConflict(true);
 
-				//console.log(['jQuery', $, event]);
+//				console.log(['jQuery', $, event]);
 
 				var name;
 
@@ -642,7 +689,7 @@ try
 
 				try
 				{
-					head.removeChild(script);
+					script.parentNode.removeChild(script);
 				}
 				catch(e)
 				{}
@@ -659,42 +706,27 @@ try
 				//console.log(['userScriptFramework', e, e.message, e.columnNumber, e.lineNumber, e.fileName, e.stack]);
 			}
 
+
+
 			if (text)
 			{
-				script.async = false;
-				script.defer = false;
-
-				script.innerHTML = script.text = text;
-
 				var ret = eval(text);
 
 				_fn();
 			}
 			else
 			{
-				script.addEventListener('load', _fn, false);
-				script.addEventListener('readystatechange', _fn, false);
+				script = userScriptFramework.addScript({
+//					async: true,
+					rel: 'jquery',
 
-				script.onreadystatechange = script.onload = _fn;
+					src: 'http://code.jquery.com/jquery-latest.js?KU201',
+				}, {
+					success: _fn,
+				});
 
-				script.src = 'http://code.jquery.com/jquery-latest.js?KU201';
-
-				head.appendChild(script);
+				console.log([script, script.src, script.readyState]);
 			}
-
-			/*
-			console.log(['jQuery 2', $, {
-				'unsafeWindow': {
-					jQuery: unsafeWindow.jQuery,
-					'$': unsafeWindow.$,
-				},
-
-				'window': {
-					jQuery: window.jQuery,
-					'$': window.$,
-				},
-			}, text, script]);
-			*/
 		})();
 	}
 	else
