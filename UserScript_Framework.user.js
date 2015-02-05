@@ -356,7 +356,7 @@ try
 			{
 				var _fn = undefined, _fn_new = undefined, _fn_name = 'GM_' + name;
 
-				if (userScriptFramework._cache_.fn_overwrite[_fn_name] !== undefined)
+				if (UF._cache_.fn_overwrite[_fn_name] !== undefined)
 				{
 					continue;
 				}
@@ -365,30 +365,30 @@ try
 
 				if (typeof _fn !== 'undefined')
 				{
-					userScriptFramework._cache_.fn_old[_fn_name] = _fn;
+					UF._cache_.fn_old[_fn_name] = _fn;
 				}
 
-				if (name.substr(0, 1) === '_' || userScriptFramework.options.fn_overwrite[name] === false)
+				if (name.substr(0, 1) === '_' || UF.options.fn_overwrite[name] === false)
 				{
-					userScriptFramework._cache_.fn_overwrite[_fn_name] = false;
+					UF._cache_.fn_overwrite[_fn_name] = false;
 
 					continue;
 				}
 
-				if (typeof userScriptFramework[name] === 'function')
+				if (typeof UF[name] === 'function')
 				{
-					if (typeof _fn === 'undefined' || userScriptFramework.options.fn_overwrite[name] === true)
+					if (typeof _fn === 'undefined' || UF.options.fn_overwrite[name] === true)
 					{
-						_fn_new = userScriptFramework[name];
+						_fn_new = UF[name];
 					}
 
 					if (_fn_new && _fn_new !== _fn)
 					{
-						Sandbox[_fn_name] = userScriptFramework._cache_.fn_overwrite[_fn_name] = _fn_new;
+						Sandbox[_fn_name] = UF._cache_.fn_overwrite[_fn_name] = _fn_new;
 					}
 					else
 					{
-						userScriptFramework._cache_.fn_overwrite[_fn_name] = false;
+						UF._cache_.fn_overwrite[_fn_name] = false;
 					}
 				}
 
@@ -396,15 +396,15 @@ try
 			}
 		}
 
-		for (name in userScriptFramework.options.fn_clone)
+		for (name in UF.options.fn_clone)
 		{
-			if (userScriptFramework._cache_.fn_clone[name] !== undefined)
+			if (UF._cache_.fn_clone[name] !== undefined)
 			{
 				continue;
 			}
 
 			var _fn = undefined, _fn_new = undefined, _fn_name = '';
-			var data = userScriptFramework.options.fn_clone[name];
+			var data = UF.options.fn_clone[name];
 
 			if (!data || ((data instanceof Array) && data[1] === false))
 			{
@@ -413,7 +413,7 @@ try
 
 			if (typeof data === 'string')
 			{
-				_fn_name = userScriptFramework.options.fn_clone[name];
+				_fn_name = UF.options.fn_clone[name];
 
 				eval('var _fn = typeof ' + _fn_name + ' === "undefined" ? undefined : ' + _fn_name + ';');
 			}
@@ -429,11 +429,11 @@ try
 
 			if (typeof _fn === 'function')
 			{
-				userScriptFramework._cache_.fn_clone[name] = userScriptFramework.fn[name] = _fn;
+				UF._cache_.fn_clone[name] = UF.fn[name] = _fn;
 			}
 			else
 			{
-				userScriptFramework._cache_.fn_clone[name] = false;
+				UF._cache_.fn_clone[name] = false;
 			}
 		}
 	};
@@ -735,7 +735,7 @@ try
 
 				_done = true;
 
-				$ = userScriptFramework.$ = Sandbox.jQuery = (window.jQuery || unsafeWindow.jQuery).noConflict(true);
+				$ = UF.$ = Sandbox.jQuery = (window.jQuery || unsafeWindow.jQuery).noConflict(true);
 
 //				console.log(['jQuery', $, event]);
 
@@ -782,7 +782,7 @@ try
 			}
 			else
 			{
-				script = userScriptFramework.addScript({
+				script = UF.addScript({
 //					async: true,
 					rel: 'jquery',
 
@@ -804,7 +804,7 @@ try
 
 })(Sandbox = typeof Sandbox === 'undefined' ? this : Sandbox, Sandbox.unsafeWindow = Sandbox.unsafeWindow || (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window), Sandbox.jQuery = Sandbox.jQuery || (typeof jQuery !== 'undefined' ? jQuery : void(0)));
 
-	console.log([Sandbox, Sandbox.jQuery, Sandbox.userScriptFramework, Sandbox.GM]);
+	console.log([Sandbox, Sandbox.jQuery, Sandbox.UF, Sandbox.GM]);
 
 	console.log([Sandbox.userScriptFramework.getResourceURL, Sandbox.userScriptFramework.getResourceURL()]);
 
