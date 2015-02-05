@@ -408,17 +408,17 @@ try
 
 		extend(xmlhttpRequestJQueryClass.prototype, ufClasses['Object'].prototype,
 		{
+			_xhr: null,
 
 			status: null,
 			statusText: null,
 
+			data: null,
 			context: null,
 
 			readyState: UNSENT,
 
 			finalUrl: null,
-
-			data: null,
 
 			response: null,
 			responseHeaders: null,
@@ -426,7 +426,9 @@ try
 			responseXML: null,
 			responseURL: null,
 
-			data: null,
+			lengthComputable: null,
+			loaded: null,
+			total: null,
 
 			open: function(type, url, async, username, password)
 			{
@@ -450,6 +452,8 @@ try
 			abort: function()
 			{
 				this.readyState = 0;
+
+				if (this._xhr && this._xhr.abort) this._xhr.abort();
 
 				return this;
 			},
@@ -539,7 +543,7 @@ try
 
 				});
 
-				UF.xmlhttpRequest(options);
+				this._xhr = UF.xmlhttpRequest(options);
 
 				return this;
 			},
@@ -1159,6 +1163,14 @@ try
 	//	console.log([Sandbox.UF.fn.utils._parseDomOption({a: 1})]);
 
 		console.log([a = Sandbox.UF.xhrJQuery(), a.getOwnPropertys(true), a.send(false), a.getOwnPropertys(true), ('data' in a.__proto__), a.clone()]);
+
+		console.log([GM_xmlhttpRequest({
+			method: "GET",
+			url: "http://www.example.com/",
+			onload: function(response) {
+				//alert(response.responseText);
+			}
+		})]);
 
 		console.log([Sandbox.userScriptFramework.getResourceURL, Sandbox.userScriptFramework.getResourceURL()]);
 
