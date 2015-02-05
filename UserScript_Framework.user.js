@@ -127,9 +127,21 @@ try
 				return false;
 			},
 
+			addStyle: function(source, target)
+			{
+				var options = this.utils._parseDomOption(target);
+				var target = options.target;
+
+				if (!target)
+				{
+					return;
+				}
+
+				return this._parent_.addStyle.call(this, source, target);
+			},
+
 			addScript: function(source, target)
 			{
-
 				var options = this.utils._parseDomOption(target);
 				var target = options.target;
 
