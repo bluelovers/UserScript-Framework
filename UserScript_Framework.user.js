@@ -414,7 +414,7 @@ try
 			statusText: null,
 
 			data: null,
-			context: null,
+			//context: null,
 
 			readyState: UNSENT,
 
