@@ -444,9 +444,53 @@ try
 
 			setRequestHeader: function(name, value)
 			{
-				this.headers[name] = value;
+				if (isPlainObject(name))
+				{
+					var k;
+					for (k in name)
+					{
+						this.setRequestHeader(k, name[k]);
+					}
+				}
+				else
+				{
+					var o = this._handleRequestHeader(name, value);
 
+					if (isPlainObject(o.name))
+					{
+						this.setRequestHeader(o.name, o.value);
+					}
+					else
+					{
+						this.headers[o.name] = o.value;
+					}
+				}
 				return this;
+			},
+
+			_handleRequestHeader: function(name, value)
+			{
+				switch (name)
+				{
+					case 'referrer':
+						//name = 'X-Alt-Referer';
+						name = {
+							'X-Alt-Referer': value,
+							'Referer': value,
+						};
+						break;
+					case 'charset':
+						name = 'Accept-Charset';
+						break;
+					case 'encoding':
+						name = 'Accept-Encoding';
+						break;
+				}
+
+				return {
+					name: name,
+					value: value,
+				};
 			},
 
 			abort: function()
