@@ -1,10 +1,10 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name		UserScript Framework
 // @namespace	bluelovers
 // @author		bluelovers
 //
-// downloadURL
-// updateURL
+// downloadURL	https://gist.github.com/bluelovers/5046969/raw/UserScript%20Framework.js?KU201
+// updateURL	https://gist.github.com/bluelovers/5046969/raw/UserScript%20Framework.js?KU201
 //
 // @include		*
 //
@@ -52,14 +52,23 @@ try
 
 	const LF = "\n";
 
+	console.log([this, __GM_STORAGE_PREFIX, LF]);
+
+	/*
+	var userScriptFramework = userScriptFramework || { options: {}, };
+
+	userScriptFramework.options.test = {a: 123};
+	userScriptFramework.options.fn_clone = {a: 456};
+	*/
+
 (function(Sandbox, unsafeWindow, $, undefined){
 
-	if (Sandbox.userScriptFramework)
+	if (Sandbox.userScriptFramework && Sandbox.userScriptFramework.isReady)
 	{
 		return Sandbox.userScriptFramework;
 	}
 
-	var UF, userScriptFramework;
+	var UF = userScriptFramework = Sandbox.userScriptFramework || {};
 
 	var _fn_env = function()
 	{
@@ -96,16 +105,24 @@ try
 		{
 			UF.fn.extend = extend = $.extend || extend;
 			UF.fn.isPlainObject = isPlainObject = $.isPlainObject || isPlainObject;
+			UF.fn.isArray = isArray = $.isArray || isArray;
 		}
 
 		//Sandbox.userScriptFramework.log(jQuery);
 	};
 
-	var userScriptFrameworkClass = function()
+	function userScriptFrameworkClass()
 	{
+		if (userScriptFrameworkClass.prototype.isReady)
+		{
+			return;
+		}
+
 		extend(userScriptFrameworkClass, Sandbox.userScriptFramework, {});
 
 		userScriptFrameworkClass.fn = userScriptFrameworkClass.prototype.fn = extend(userScriptFrameworkClass.prototype, Sandbox.GM.prototype, Sandbox.userScriptFramework.fn || Sandbox.UF.fn, {
+
+			isReady: true,
 
 			_cache_: {
 				fn_overwrite: {},
@@ -193,19 +210,7 @@ try
 				return elem;
 			},
 
-			isArray: ($ && $.isArray) ? $.isArray : (function(source)
-			{
-				if ($ && $.isArray)
-				{
-					return $.isArray(source);
-				}
-				else if (Array.isArray)
-				{
-					return Array.isArray(source);
-				}
-
-				return Object.prototype.toString.call(source) === '[object Array]';
-			}),
+			isArray: isArray,
 
 			tryCatch: function(_try, _catch)
 			{
@@ -264,7 +269,7 @@ try
 
 				if (data !== undefined)
 				{
-					if (isPlainObject(data))
+					if (this.isPlainObject(data))
 					{
 						extend(options, data);
 
@@ -277,7 +282,7 @@ try
 
 					if (target == -1)
 					{
-						UF.tryCatch(function(){
+						this.tryCatch(function(){
 
 							target = $('style, link[rel="stylesheet"], link[type="text/css"]').eq(-1).parents('head, body').eq(-1)[0];
 
@@ -294,16 +299,16 @@ try
 
 				options.target = target;
 
-//				console.log([data, options]);
-
 				return options;
 			},
 
 		});
 
+		userScriptFrameworkClass.fn.utils.__proto__ = userScriptFrameworkClass.fn;
+
 		userScriptFrameworkClass.fn.classes = extend(userScriptFrameworkClass.fn.classes, {
 
-			xmlhttpRequestJQueryClass: GM_xmlhttpRequestJQueryClass,
+			xmlhttpRequestJQueryClass: xmlhttpRequestJQueryClass,
 
 		});
 
@@ -351,35 +356,35 @@ try
 
 		})(userScriptFrameworkClass.fn.getResourceText);
 
-		extend(this, {
+		this.options = extend(true, this.options, {
 
-			options: {
+			fn_overwrite: {
 
-				fn_overwrite: {
-
-					addStyle: true,
-					log: true,
-
-				},
-
-				fn_clone: {
-
-					//
-
-				},
+				addStyle: true,
+				log: true,
 
 			},
 
-		});
+			fn_clone: {
 
-		this.fn.utils.constructor = this;
+				//
+
+			},
+
+		}, Sandbox.userScriptFramework.options);
+
+//		this.fn.utils.__proto__.constructor = this;
 
 		//console.log([this, this.fn, userScriptFramework, userScriptFramework.fn]);
 
 		return this;
 	};
 
-	function GM_xmlhttpRequestJQueryClass()
+	/**
+	 * http://ryangreenberg.com/archives/2010/03/greasemonkey_jquery.php
+	 * https://gist.github.com/Acorn-zz/1060206
+	 **/
+	function xmlhttpRequestJQueryClass()
 	{
 		this.type = null;
 		this.url = null;
@@ -552,11 +557,22 @@ try
 			length = arguments.length,
 			target = arguments[0] ||
 			{},
+			deep = false,
 			i = 1;
 
 		if (length == 1)
 		{
 			return extend($, target);
+		}
+
+		if (typeof target === "boolean")
+		{
+			deep = target;
+
+			// skip the boolean and the target
+			target = arguments[i] ||
+			{};
+			i++;
 		}
 
 		// Handle case when target is a string or something (possible in deep copy)
@@ -579,7 +595,26 @@ try
 						continue;
 					}
 
-					if (copy !== undefined)
+					// Recurse if we're merging plain objects or arrays
+					if (deep && copy && (isPlainObject(copy) || (copyIsArray = isArray(copy))))
+					{
+						if (copyIsArray)
+						{
+							copyIsArray = false;
+							clone = src && isArray(src) ? src : [];
+						}
+						else
+						{
+							clone = src && isPlainObject(src) ? src :
+							{};
+						}
+
+						// Never move original objects, clone them
+						target[name] = extend(deep, clone, copy);
+
+						// Don't bring in undefined values
+					}
+					else if (copy !== undefined)
 					{
 						target[name] = copy;
 					}
@@ -598,6 +633,20 @@ try
 		}
 
 		return true;
+	});
+
+	var isArray = ($ && $.isArray) ? $.isArray : (function(source)
+	{
+		if ($ && $.isArray)
+		{
+			return $.isArray(source);
+		}
+		else if (Array.isArray)
+		{
+			return Array.isArray(source);
+		}
+
+		return Object.prototype.toString.call(source) === '[object Array]';
 	});
 
 	var _fn_gm = function()
@@ -913,6 +962,8 @@ try
 })(Sandbox = typeof Sandbox === 'undefined' ? this : Sandbox, Sandbox.unsafeWindow = Sandbox.unsafeWindow || (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window), Sandbox.jQuery = Sandbox.jQuery || (typeof jQuery !== 'undefined' ? jQuery : void(0)));
 
 	console.log([Sandbox, Sandbox.jQuery, Sandbox.UF, Sandbox.GM]);
+
+	console.log([Sandbox.UF.fn.utils._parseDomOption({a: 1})]);
 
 	console.log([Sandbox.userScriptFramework.getResourceURL, Sandbox.userScriptFramework.getResourceURL()]);
 
