@@ -3,8 +3,8 @@
 // @namespace	bluelovers
 // @author		bluelovers
 //
-// downloadURL	https://gist.github.com/bluelovers/5046969/raw/UserScript%20Framework.js?KU201
-// updateURL	https://gist.github.com/bluelovers/5046969/raw/UserScript%20Framework.js?KU201
+// downloadURL	https://github.com/bluelovers/UserScript-Framework/raw/develop/UserScript_Framework.user.js?KU201
+// updateURL	https://github.com/bluelovers/UserScript-Framework/raw/develop/UserScript_Framework.user.js?KU201
 //
 // @include		*
 //
@@ -34,6 +34,10 @@
 // @grant		GM_setClipboard
 // @grant		GM_xmlhttpRequest
 // @grant		unsafeWindow
+//
+// Tampermonkey
+//
+// @grant		GM_download
 //
 // @run-at		document-start
 // @noframes
