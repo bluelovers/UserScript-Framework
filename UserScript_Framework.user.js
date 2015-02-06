@@ -18,6 +18,7 @@
 // grant		none
 //
 // @grant		GM_info
+// @grant		unsafeWindow
 //
 // @grant		GM_deleteValue
 // @grant		GM_getValue
@@ -33,11 +34,11 @@
 // @grant		GM_registerMenuCommand
 // @grant		GM_setClipboard
 // @grant		GM_xmlhttpRequest
-// @grant		unsafeWindow
 //
 // Tampermonkey
 //
 // @grant		GM_download
+// @grant		GM_addValueChangeListener
 //
 // @run-at		document-start
 // @noframes
@@ -780,13 +781,13 @@ try
 
 		XMLHttpRequestClass.prototype.createNew.prototype = XMLHttpRequestClass.prototype;
 
-		/*
 		// https://developer.mozilla.org/en-US/docs/Web/API/notification
 		ufClasses['NotificationClass'] = createClasses('NotificationClass',
 			[
 				ufClasses['ObjectWithEvent'].prototype,
 				ufClasses['Object'].prototype,
 				{
+
 					isReady: null,
 
 					_object_: window.Notification || window.mozNotification || window.webkitNotification,
@@ -817,6 +818,7 @@ try
 						return this;
 					},
 
+
 					requestPermission: function(force)
 					{
 						var target = this;
@@ -837,19 +839,24 @@ try
 								}
 
 								UF.logTest('Notification.requestPermission', permission, arguments);
+
+								if (typeof force === 'function')
+								{
+									force(permission, arguments);
+								}
 							});
 						}
+
+						return this;
 					},
 
-					_createNotification: function()
+					_createNotification: function(options)
 					{
 						this.onclose = this.onclose || this.ondone;
 
-						var options = this.getOwnPropertys(true);
+						options = extend({}, this.getOwnPropertys(true), options);
 
-						var instance = new this._object_(
-							options.title || options.body, options,
-						);
+						var instance = new this._object_(options.title || options.body, options);
 
 						var i, event_name;
 
@@ -863,13 +870,61 @@ try
 						return instance;
 					},
 
+					open: function(title, options, delay)
+					{
+						if (typeof delay === 'undefined' && typeof options === 'number')
+						{
+							delay = options;
+							options = {};
+						}
+
+						if (isPlainObject(title))
+						{
+							options = title;
+						}
+
+						options = options || {};
+
+						if (typeof delay === 'number')
+						{
+							options.delay = delay || options.delay;
+						}
+
+						if (typeof title === 'string')
+						{
+							options.title = title || options.title;
+						}
+
+						options = extend({}, this.getOwnPropertys(true), options);
+
+						if (options.delay)
+						{
+							var target = this;
+
+							target._instance_ = null;
+
+							setTimeout(function(){
+								target._instance_ = target._createNotification(options);
+							}, options.delay);
+						}
+						else
+						{
+							this._instance_ = this._createNotification(options);
+						}
+
+						return this;
+					},
+
 					close: function()
 					{
 						if (this._instance_)
 						{
 							this._instance_.close();
 						}
+
+						return this;
 					},
+
 				},
 			], function(options)
 			{
@@ -880,7 +935,6 @@ try
 				this.prototype.createNew.prototype = this.prototype;
 			}
 		);
-		*/
 	};
 
 	function createFunction(displayName, functionBody)
