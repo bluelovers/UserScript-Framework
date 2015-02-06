@@ -282,13 +282,13 @@ try
 
 			isTampermonkey: function()
 			{
-				if (!GM_info)
+				if (!this.info)
 				{
 					return null;
 				}
 
 				// http://tampermonkey.net/documentation.php#GM_info
-				if (GM_info.scriptHandler === 'scriptHandler' && typeof GM_addValueChangeListener === 'function' && typeof GM_download === 'function')
+				if (this.info.scriptHandler === 'scriptHandler' && typeof GM_addValueChangeListener === 'function' && typeof GM_download === 'function')
 				{
 					return true;
 				}
@@ -558,6 +558,8 @@ try
 			return new XMLHttpRequestClass.prototype.createNew(options);
 		};
 
+		ufClasses['XMLHttpRequestClass'] = XMLHttpRequestClass;
+
 		/**
 		 * http://ryangreenberg.com/archives/2010/03/greasemonkey_jquery.php
 		 * https://gist.github.com/Acorn-zz/1060206
@@ -778,46 +780,207 @@ try
 
 		XMLHttpRequestClass.prototype.createNew.prototype = XMLHttpRequestClass.prototype;
 
-		ufClasses['XMLHttpRequestClass'] = XMLHttpRequestClass;
+		/*
+		// https://developer.mozilla.org/en-US/docs/Web/API/notification
+		ufClasses['NotificationClass'] = createClasses('NotificationClass',
+			[
+				ufClasses['ObjectWithEvent'].prototype,
+				ufClasses['Object'].prototype,
+				{
+					isReady: null,
 
+					_object_: window.Notification || window.mozNotification || window.webkitNotification,
+
+					_instance_: null,
+
+					_default_:
+					{
+						options:
+						{
+							title: 'UserScript Framework',
+
+							body: null,
+							icon: null,
+
+							delay: 0,
+						},
+					},
+
+					_events_: ['click', 'error', 'show', 'close'],
+
+					createNew: function(options)
+					{
+						this.requestPermission();
+
+						extend(this, this._default_.options, options);
+
+						return this;
+					},
+
+					requestPermission: function(force)
+					{
+						var target = this;
+
+						if ((force && !target.prototype.isReady) || target.prototype.isReady === null)
+						{
+							target.prototype.isReady = false;
+
+							target._object_.requestPermission(function(permission){
+
+								if (permission === 'granted')
+								{
+									target.prototype.isReady = true;
+								}
+								else
+								{
+									target.prototype.isReady = false;
+								}
+
+								UF.logTest('Notification.requestPermission', permission, arguments);
+							});
+						}
+					},
+
+					_createNotification: function()
+					{
+						this.onclose = this.onclose || this.ondone;
+
+						var options = this.getOwnPropertys(true);
+
+						var instance = new this._object_(
+							options.title || options.body, options,
+						);
+
+						var i, event_name;
+
+						for (i in this._events_)
+						{
+							event_name = this._events_[i];
+
+							instance['on' + event_name] = this._createCallback(this, event_name, instance);
+						}
+
+						return instance;
+					},
+
+					close: function()
+					{
+						if (this._instance_)
+						{
+							this._instance_.close();
+						}
+					},
+				},
+			], function(options)
+			{
+				return new this.prototype.createNew(options);
+			},
+			null,
+			function(){
+				this.prototype.createNew.prototype = this.prototype;
+			}
+		);
+		*/
 	};
+
+	function createFunction(displayName, functionBody)
+	{
+		var newTarget = typeof functionBody === 'function' ? functionBody : (typeof functionBody === 'string' ? new Function(functionBody) : new Function());
+
+		if (typeof displayName === 'string' && displayName)
+		{
+			newTarget.displayName = newTarget.prototype.displayName = displayName;
+		}
+
+		return newTarget;
+	}
+
+	function createClasses(displayName, extendPrototype, createNew, extendClass, fn)
+	{
+		var newClass = createFunction(displayName, createNew);
+
+		if (extendPrototype)
+		{
+			if (isArray(extendPrototype))
+			{
+				extendPrototype.unshift(newClass.prototype);
+
+				newClass.prototype = extend.apply(newClass.prototype, extendPrototype);
+			}
+			else if (isPlainObject(extendPrototype))
+			{
+				newClass.prototype = extend(newClass.prototype, extendPrototype);
+			}
+		}
+
+		if (extendClass)
+		{
+			if (isArray(extendClass))
+			{
+				extendClass.unshift(newClass);
+
+				extend.apply(newClass, extendClass);
+			}
+			else if (isPlainObject(extendClass))
+			{
+				extend(newClass, extendClass);
+			}
+		}
+
+		if (displayName)
+		{
+			newClass.displayName = newClass.prototype.displayName = displayName;
+		}
+
+		if (typeof fn === 'function')
+		{
+			fn.apply(newClass, arguments);
+		}
+
+		return newClass;
+	}
 
 	function _fn_done()
 	{
 		try
 		{
-			var _defineProperties = [];
+			if (!_fn_done.runed)
+			{
+				_fn_done.runed = true;
 
-			_defineProperties[0] = {
+				var _defineProperties = [];
 
-				info: {
-					writable: false,
-					enumerable: false,
-					configurable: false,
-				},
+				_defineProperties[0] = {
 
-			};
-
-			Object.defineProperties(Sandbox.GM, extend({}, _defineProperties[0], {}));
-			Object.defineProperties(userScriptFrameworkClass.fn, extend({}, _defineProperties[0], {
-
-				xhr: {
-
-					get: function()
-					{
-						var xhr = ufClasses[(this.options.ajax.xhrClass || 'XMLHttpRequestClass')];
-
-						return xhr;
+					info: {
+						writable: false,
+						enumerable: false,
+						configurable: false,
 					},
 
-					set: function(val)
-					{
+				};
+
+				Object.defineProperties(Sandbox.GM, extend({}, _defineProperties[0], {}));
+				Object.defineProperties(userScriptFrameworkClass.fn, extend({}, _defineProperties[0], {
+
+					xhr: {
+
+						get: function()
+						{
+							var xhr = ufClasses[(this.options.ajax.xhrClass || 'XMLHttpRequestClass')];
+
+							return xhr;
+						},
+
+						set: function(val)
+						{
+
+						},
 
 					},
 
-				},
-
-			}));
+				}));
+			}
 		}
 		catch(e)
 		{
@@ -1060,7 +1223,9 @@ try
 
 			__GM_STORAGE_PREFIX: __GM_STORAGE_PREFIX,
 
-			_storage_: localStorage,
+			_object_: {
+				storage: localStorage,
+			},
 
 			info: GM_info,
 
@@ -1109,14 +1274,14 @@ try
 
 			deleteValue: ((typeof GM_deleteValue === 'function') ? GM_deleteValue : function(name)
 			{
-				this._storage_.removeItem(this.__GM_STORAGE_PREFIX + name);
+				this._object_.storage.removeItem(this.__GM_STORAGE_PREFIX + name);
 
 				return this;
 			}),
 
 			getValue: ((typeof GM_getValue === 'function') ? GM_getValue : function(name, defaultValue)
 			{
-				var val = this._storage_.getItem(this.__GM_STORAGE_PREFIX + name);
+				var val = this._object_.storage.getItem(this.__GM_STORAGE_PREFIX + name);
 				if (null === val && 'undefined' != typeof defaultValue) return defaultValue;
 				return val;
 			}),
@@ -1126,9 +1291,9 @@ try
 				var prefixLen = this.__GM_STORAGE_PREFIX.length;
 				var values = [];
 				var i = 0;
-				for (var i = 0; i < this._storage_.length; i++)
+				for (var i = 0; i < this._object_.storage.length; i++)
 				{
-					var k = this._storage_.key(i);
+					var k = this._object_.storage.key(i);
 					if (k.substr(0, prefixLen) === this.__GM_STORAGE_PREFIX)
 					{
 						values.push(k.substr(prefixLen));
@@ -1139,7 +1304,7 @@ try
 
 			setValue: ((typeof GM_setValue === 'function') ? GM_setValue : function(name, value)
 			{
-				this._storage_.setItem(this.__GM_STORAGE_PREFIX + name, value);
+				this._object_.storage.setItem(this.__GM_STORAGE_PREFIX + name, value);
 
 				return this;
 			}),
@@ -1194,6 +1359,8 @@ try
 
 			download: ((typeof GM_download === 'function') ? GM_download : throwNewErrorFn('download')),
 
+			notification: ((typeof GM_notification === 'function') ? GM_notification : throwNewErrorFn('notification')),
+
 		});
 	};
 
@@ -1214,7 +1381,7 @@ try
 		ufClasses = userScriptFrameworkClass.prototype.classes = extend(userScriptFrameworkClass.prototype.classes,
 		{
 
-			'Object': extend(true, function() {},
+			'Object': extend(true, new Function,
 			{
 				prototype:
 				{
@@ -1282,6 +1449,35 @@ try
 				},
 			}),
 			*/
+
+			'ObjectWithEvent': extend(true, new Function,
+			{
+				prototype:
+				{
+
+					_events_: [],
+
+					_trigger: function(event_name, args, data)
+					{
+						var callback = this['on' + event_name];
+
+						if (typeof callback === 'function')
+						{
+							args.push(data);
+
+							return callback.apply(this, args);
+						}
+					},
+
+					_createCallback: function(that, event_name, data)
+					{
+						return function()
+						{
+							that._trigger.call(that, event_name, arguments, data);
+						};
+					},
+				},
+			}),
 
 		});
 
