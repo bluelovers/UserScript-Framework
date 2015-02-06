@@ -39,6 +39,7 @@
 //
 // @grant		GM_download
 // @grant		GM_addValueChangeListener
+// grant		GM_notification
 //
 // @run-at		document-start
 // @noframes
