@@ -1033,6 +1033,12 @@ try
 
 					},
 
+					isReady: {
+						writable: false,
+						enumerable: false,
+						configurable: false,
+					},
+
 				}));
 			}
 		}
