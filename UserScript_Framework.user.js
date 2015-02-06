@@ -39,6 +39,7 @@
 //
 // @grant		GM_download
 // @grant		GM_addValueChangeListener
+//
 // grant		GM_notification
 //
 // @run-at		document-start
@@ -398,7 +399,7 @@ try
 
 			getResourceClasses: function(resourceName, defaultValue)
 			{
-				return this.fn.classes[resourceName] || (defaultValue ? this.fn.classes[defaultValue] : undefined);
+				return ufClasses[resourceName] || (defaultValue ? ufClasses[defaultValue] : undefined);
 			},
 
 			doneEvent: function (event, mode)
@@ -413,6 +414,13 @@ try
 				{
 					this.log.apply(this, arguments);
 				}
+			},
+
+			notification: function(options)
+			{
+				var target = (this.getResourceClasses('NotificationClass'))();
+
+				return target.open.apply(target, arguments);
 			},
 
 		});
@@ -523,6 +531,8 @@ try
 
 				addStyle: true,
 				log: true,
+
+//				notification: true,
 
 			},
 
@@ -801,8 +811,8 @@ try
 						{
 							title: 'UserScript Framework',
 
-							body: null,
-							icon: null,
+							body: '',
+							icon: '',
 
 							delay: 0,
 						},
@@ -819,43 +829,11 @@ try
 						return this;
 					},
 
-
-					requestPermission: function(force)
-					{
-						var target = this;
-
-						if ((force && !target.prototype.isReady) || target.prototype.isReady === null)
-						{
-							target.prototype.isReady = false;
-
-							target._object_.requestPermission(function(permission){
-
-								if (permission === 'granted')
-								{
-									target.prototype.isReady = true;
-								}
-								else
-								{
-									target.prototype.isReady = false;
-								}
-
-								UF.logTest('Notification.requestPermission', permission, arguments);
-
-								if (typeof force === 'function')
-								{
-									force(permission, arguments);
-								}
-							});
-						}
-
-						return this;
-					},
-
 					_createNotification: function(options)
 					{
-						this.onclose = this.onclose || this.ondone;
-
 						options = extend({}, this.getOwnPropertys(true), options);
+
+						options.onclose = options.onclose || options.ondone;
 
 						var instance = new this._object_(options.title || options.body, options);
 
@@ -896,12 +874,12 @@ try
 							options.title = title || options.title;
 						}
 
-						options = extend({}, this.getOwnPropertys(true), options);
+						var target = this;
+
+						options = extend({}, target.getOwnPropertys(true), options);
 
 						if (options.delay)
 						{
-							var target = this;
-
 							target._instance_ = null;
 
 							setTimeout(function(){
@@ -910,10 +888,10 @@ try
 						}
 						else
 						{
-							this._instance_ = this._createNotification(options);
+							target._instance_ = target._createNotification(options);
 						}
 
-						return this;
+						return target;
 					},
 
 					close: function()
@@ -929,10 +907,53 @@ try
 				},
 			], function(options)
 			{
+				//UF.logTest(this, ufClasses['NotificationClass'], arguments);
+
 				return new this.prototype.createNew(options);
 			},
-			null,
+			{
+
+				requestPermission: function(force)
+				{
+					var target = this;
+
+					if (!isClasses(target))
+					{
+						target = target.constructor;
+					}
+
+					if ((force && !target.prototype.isReady) || target.prototype.isReady === null)
+					{
+						target.prototype.isReady = false;
+
+						target.prototype._object_.requestPermission(function(permission){
+
+							if (permission === 'granted')
+							{
+								target.prototype.isReady = true;
+							}
+							else
+							{
+								target.prototype.isReady = false;
+							}
+
+							UF.logTest('Notification.requestPermission', permission, arguments);
+
+							if (typeof force === 'function')
+							{
+								force(permission, arguments);
+							}
+						});
+					}
+
+					return target.prototype.isReady;
+				},
+
+			},
 			function(){
+
+				this.prototype.requestPermission = this.requestPermission;
+
 				this.prototype.createNew.prototype = this.prototype;
 			}
 		);
@@ -952,7 +973,18 @@ try
 
 	function createClasses(displayName, extendPrototype, createNew, extendClass, fn)
 	{
-		var newClass = createFunction(displayName, createNew);
+		var newClass;
+
+		createNew = createFunction(displayName + ':createNew', createNew);
+
+		newClass = (function ()
+		{
+			//UF.logTest(this, newClass, createNew, arguments, newClass.caller, this instanceof newClass, newClass.caller instanceof newClass);
+
+			return createNew.apply((this instanceof newClass) ? this : newClass, arguments);
+		});
+
+		newClass.prototype.constructor = newClass;
 
 		if (extendPrototype)
 		{
@@ -1662,6 +1694,11 @@ try
 
 	_fn_done.call(Sandbox);
 
+	function isClasses(target)
+	{
+		return !!(target.prototype);
+	}
+
 })(Sandbox = typeof Sandbox === 'undefined' ? this : Sandbox, Sandbox.unsafeWindow = Sandbox.unsafeWindow || (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window), Sandbox.jQuery = Sandbox.jQuery || (typeof jQuery !== 'undefined' ? jQuery : void(0)));
 
 	if (__TEST__)
@@ -1671,9 +1708,24 @@ try
 
 	//	console.log([Sandbox.UF.fn.utils._parseDomOption({a: 1})]);
 
-		console.log([a = Sandbox.UF.xhr(), a.getOwnPropertys(true), a.send(false), a.getOwnPropertys(true), ('data' in a.__proto__), a.clone()]);
+//		console.log([a = Sandbox.UF.xhr(), a.getOwnPropertys(true), a.send(false), a.getOwnPropertys(true), ('data' in a.__proto__), a.clone()]);
+//
+//		console.log([a.setRequestHeader('referer', 'http://share.dmhy.org/topics/view/382287_1_A_Tokyo_Ghoul_A_05_BIG5_MP4_720P.html')]);
 
-		console.log([a.setRequestHeader('referer', 'http://share.dmhy.org/topics/view/382287_1_A_Tokyo_Ghoul_A_05_BIG5_MP4_720P.html')]);
+		0 && setTimeout(function(){
+
+			try
+			{
+				var ret = UF.notification();
+
+				UF.log(ret);
+			}
+			catch(e)
+			{
+				UF.log(e);
+			}
+
+		}, 3000);
 
 //		console.log([a()]);
 
