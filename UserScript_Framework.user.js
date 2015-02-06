@@ -47,13 +47,15 @@
 // ==/UserScript==
 try
 {
+	//"use strict";
+
 	const __TEST__ = true;
 
 	const __GM_STORAGE_PREFIX = ['', GM_info.script.namespace, GM_info.script.name, ''].join('***');
 
 	const LF = "\n";
 
-	__TEST__ && console.log([this, __GM_STORAGE_PREFIX, LF]);
+	__TEST__ && console.log([this, __GM_STORAGE_PREFIX]);
 
 	/*
 	var userScriptFramework = userScriptFramework || { options: {}, };
@@ -72,7 +74,7 @@ try
 	var UF = userScriptFramework = Sandbox.userScriptFramework || {};
 	var ufClasses;
 
-	var _fn_env = function()
+	function _fn_env()
 	{
 		_fn_hack.call(Sandbox);
 
@@ -85,7 +87,7 @@ try
 		//Sandbox.a = function(){return 11111;};
 	};
 
-	var _fn_init = function()
+	function _fn_init()
 	{
 		_fn_gm();
 
@@ -101,13 +103,153 @@ try
 		//Sandbox.userScriptFramework.log(Sandbox.userScriptFramework, Sandbox.userScriptFramework.fn);
 	};
 
-	var _fn_jquery = function()
+	function _fn_jquery()
 	{
 		if ($)
 		{
 			UF.fn.extend = extend = $.extend || extend;
 			UF.fn.isPlainObject = isPlainObject = $.isPlainObject || isPlainObject;
 			UF.fn.isArray = isArray = $.isArray || isArray;
+
+			if (UF.fn.download.isUndefined)
+			{
+				UF.fn.download = function(url, name)
+				{
+					var details = {};
+
+					if (isPlainObject(url))
+					{
+						details = url;
+
+						url = details.url;
+						name = details.name;
+					}
+					else
+					{
+						details.url = url;
+						details.name = name;
+					}
+
+					var options = extend({}, {
+
+						xhr: UF.xhr,
+
+						data: details.params,
+
+						error: details.onerror,
+
+						xhrFields: {
+							responseType: 'blob',
+							withCredentials: true,
+						},
+
+//						responseType: 'blob',
+//						responseType:'arraybuffer',
+
+//						processData: false,
+
+//						crossDomain: true,
+
+//						async: true,
+
+					}, details.options, {
+						type: details.type || 'GET' || 'POST',
+						url: details.url,
+
+						headers: extend({
+
+							referer: window.location.href,
+
+							'Cookie' : document.cookie,
+
+						}, details.headers),
+
+						success: function(response, status, xhr)
+						{
+
+							try
+							{
+
+							// check for a filename
+							var filename = '';
+							var disposition = xhr.getResponseHeader('Content-Disposition');
+							if (disposition && disposition.indexOf('attachment') !== -1)
+							{
+								var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+								var matches = filenameRegex.exec(disposition);
+								if (matches != null && matches[1]) filename = matches[1].replace(/['"]/g, '');
+							}
+
+							filename = filename || details.name;
+
+							var type = xhr.getResponseHeader('Content-Type');
+							var blob = new Blob([response],
+							{
+								type: type
+							});
+
+							var URL, downloadUrl, a;
+
+							if (typeof window.navigator.msSaveBlob !== 'undefined')
+							{
+								// IE workaround for "HTML7007: One or more blob URLs were revoked by closing the blob for which they were created. These URLs will no longer resolve as the data backing the URL has been freed."
+								window.navigator.msSaveBlob(blob, filename);
+							}
+							else
+							{
+								URL = window.URL || window.webkitURL;
+								downloadUrl = URL.createObjectURL(blob);
+
+								if (filename)
+								{
+									// use HTML5 a[download] attribute to specify filename
+									a = document.createElement("a");
+									// safari doesn't support this yet
+									if (typeof a.download === 'undefined')
+									{
+										window.location = downloadUrl;
+									}
+									else
+									{
+										a.href = downloadUrl;
+										a.download = filename;
+										document.body.appendChild(a);
+										a.click();
+									}
+								}
+								else
+								{
+									window.location = downloadUrl;
+								}
+
+								setTimeout(function()
+								{
+									URL.revokeObjectURL(downloadUrl);
+								}, 100); // cleanup
+							}
+
+							UF.log('UF.fn.download.success', [response, status, xhr], filename, disposition, type, blob, [URL, downloadUrl], a);
+
+							}
+							catch(e)
+							{
+								UF.log('UF.fn.download.success', [response, status, xhr], e);
+							}
+						},
+					});
+
+					var _ajax = $.ajax(options);
+
+					if (details.onload)
+					{
+						_ajax.done(details.onload);
+					}
+
+					UF.log('UF.fn.download', options, _ajax);
+
+					return _ajax;
+				};
+			}
 		}
 
 		//Sandbox.userScriptFramework.log(jQuery);
@@ -247,11 +389,24 @@ try
 				 		}
 				 	});
 			 **/
-			xhrJQuery: function(options)
-			{
-				var xhr = new this.fn.classes.xmlhttpRequestJQueryClass(options);
 
-				return xhr;
+			getResourceClasses: function(resourceName, defaultValue)
+			{
+				return this.fn.classes[resourceName] || (defaultValue ? this.fn.classes[defaultValue] : undefined);
+			},
+
+			doneEvent: function (event, mode)
+			{
+				event.stopPropagation();
+				if (!mode) event.preventDefault();
+			},
+
+			logTest: function ()
+			{
+				if (__TEST__)
+				{
+					this.log.apply(this, arguments);
+				}
 			},
 
 		});
@@ -308,7 +463,7 @@ try
 
 		ufClasses = userScriptFrameworkClass.fn.classes = extend(userScriptFrameworkClass.fn.classes, {
 
-			xmlhttpRequestJQueryClass: xmlhttpRequestJQueryClass,
+			//XMLHttpRequestClass: XMLHttpRequestClass,
 
 		});
 
@@ -371,6 +526,12 @@ try
 
 			},
 
+			ajax: {
+
+				xhrClass: null,
+
+			},
+
 		}, Sandbox.userScriptFramework.options);
 
 //		this.fn.utils.__proto__.constructor = this;
@@ -380,43 +541,38 @@ try
 		return this;
 	};
 
-	/**
-	 * http://ryangreenberg.com/archives/2010/03/greasemonkey_jquery.php
-	 * https://gist.github.com/Acorn-zz/1060206
-	 **/
-	function xmlhttpRequestJQueryClass(options)
+	function _fn_classes()
 	{
-		const UNSENT = 0;
-		const OPENED = 1;
-		const HEADERS_RECEIVED = 2;
-		const LOADING = 3;
-		const DONE = 4;
-
-		extend(this,
+		function XMLHttpRequestClass(options)
 		{
+			const UNSENT = 0;
+			const OPENED = 1;
+			const HEADERS_RECEIVED = 2;
+			const LOADING = 3;
+			const DONE = 4;
 
-			type: null,
-			url: null,
-			async: null,
-			username: null,
-			password: null,
+			return new XMLHttpRequestClass.prototype.createNew(options);
+		};
 
-			headers:
-			{},
+		/**
+		 * http://ryangreenberg.com/archives/2010/03/greasemonkey_jquery.php
+		 * https://gist.github.com/Acorn-zz/1060206
+		 **/
 
-		}, options);
-
-		extend(xmlhttpRequestJQueryClass.prototype, ufClasses['Object'].prototype,
+		extend(XMLHttpRequestClass.prototype, ufClasses['Object'].prototype,
 		{
+			isReady: true,
+
 			_xhr: null,
+			_xhr_events: ['load', 'error', 'readystatechange', 'abort', 'progress', 'timeout'],
 
 			status: null,
 			statusText: null,
 
-			data: null,
+			//data: null,
 			//context: null,
 
-			readyState: UNSENT,
+			readyState: XMLHttpRequestClass.UNSENT,
 
 			finalUrl: null,
 
@@ -430,6 +586,25 @@ try
 			loaded: null,
 			total: null,
 
+			createNew: function(options)
+			{
+				extend(this,
+				{
+
+					type: null,
+					url: null,
+					async: null,
+					username: null,
+					password: null,
+
+					headers:
+					{},
+
+				}, options);
+
+				return this;
+			},
+
 			open: function(type, url, async, username, password)
 			{
 				this.type = type ? type : null;
@@ -437,13 +612,15 @@ try
 				this.async = async ? async : null;
 				this.username = username ? username : null;
 				this.password = password ? password : null;
-				this.readyState = 1;
+				this.readyState = XMLHttpRequestClass.OPENED;
 
 				return this;
 			},
 
 			setRequestHeader: function(name, value)
 			{
+				//UF.log('setRequestHeader', this, name, value);
+
 				if (isPlainObject(name))
 				{
 					var k;
@@ -455,6 +632,8 @@ try
 				else
 				{
 					var o = this._handleRequestHeader(name, value);
+
+					//UF.log('setRequestHeader 2', this, o);
 
 					if (isPlainObject(o.name))
 					{
@@ -472,8 +651,7 @@ try
 			{
 				switch (name)
 				{
-					case 'referrer':
-						//name = 'X-Alt-Referer';
+					case 'referer':
 						name = {
 							'X-Alt-Referer': value,
 							'Referer': value,
@@ -493,6 +671,8 @@ try
 						break;
 				}
 
+				//UF.log('_handleRequestHeader', this, name, value);
+
 				return {
 					name: name,
 					value: value,
@@ -501,7 +681,7 @@ try
 
 			abort: function()
 			{
-				this.readyState = 0;
+				this.readyState = XMLHttpRequestClass.UNSENT;
 
 				if (this._xhr && this._xhr.abort) this._xhr.abort();
 
@@ -510,7 +690,7 @@ try
 
 			getAllResponseHeaders: function(name)
 			{
-				if (this.readyState != 4) return '';
+				if (this.readyState != XMLHttpRequestClass.DONE) return '';
 				return this.responseHeaders;
 			},
 
@@ -537,72 +717,68 @@ try
 				return new this.constructor(this.getOptions());
 			},
 
+			_trigger: function(event_name, args)
+			{
+				var callback = this['on' + event_name];
+
+				UF.logTest('_trigger', this, callback, arguments);
+
+				if (typeof callback === 'function')
+				{
+					return callback.apply(this, args);
+				}
+			},
+
+			_createCallback: function(that, event_name)
+			{
+				return function(rsp)
+				{
+					// Populate wrapper object with returned data
+					for (k in rsp)
+					{
+						that[k] = rsp[k];
+					}
+
+//					UF.log('_createCallback', that, event_name, arguments);
+
+					that._trigger.call(that, event_name, arguments);
+				};
+			},
+
 			send: function(data)
 			{
 				this.data = data;
 				var that = this;
 
-				var _fn = function(){};
+				var options = this.getOwnPropertys(true);
 
-				var callback = {
-					'onload': this.onload || _fn,
-					'onerror': this.onerror || _fn,
-					'onreadystatechange': this.onreadystatechange || _fn,
-				};
+				options['method'] = this.type;
 
-				var options = extend(
-				{}, this.getOwnPropertys(true),
+				var i, event_name;
+
+				for (i in this._xhr_events)
 				{
+					event_name = this._xhr_events[i];
 
-					method: this.type,
-
-//					url: this.url,
-//					headers: this.headers,
-//					data: this.data,
-
-					onload: function(rsp)
-					{
-						// Populate wrapper object with returned data
-						for (k in rsp)
-						{
-							that[k] = rsp[k];
-						}
-
-						callback['onload'].apply(that, arguments);
-					},
-
-					onerror: function(rsp)
-					{
-						for (k in rsp)
-						{
-							that[k] = rsp[k];
-						}
-
-						callback['onerror'].apply(that, arguments);
-					},
-
-					onreadystatechange: function(rsp)
-					{
-						for (k in rsp)
-						{
-							that[k] = rsp[k];
-						}
-
-						callback['onreadystatechange'].apply(that, arguments);
-					},
-
-				});
+					options['on' + event_name] = this._createCallback(that, event_name);
+				}
 
 				this._xhr = UF.xmlhttpRequest(options);
+
+				UF.logTest(this, this.getOwnPropertys(true), options);
 
 				return this;
 			},
 
 		});
 
+		XMLHttpRequestClass.prototype.createNew.prototype = XMLHttpRequestClass.prototype;
+
+		ufClasses['XMLHttpRequestClass'] = XMLHttpRequestClass;
+
 	};
 
-	var _fn_done = function()
+	function _fn_done()
 	{
 		try
 		{
@@ -618,8 +794,26 @@ try
 
 			};
 
-			Object.defineProperties(Sandbox.GM, _defineProperties[0]);
-			Object.defineProperties(userScriptFrameworkClass.fn, _defineProperties[0]);
+			Object.defineProperties(Sandbox.GM, extend({}, _defineProperties[0], {}));
+			Object.defineProperties(userScriptFrameworkClass.fn, extend({}, _defineProperties[0], {
+
+				xhr: {
+
+					get: function()
+					{
+						var xhr = ufClasses[(this.options.ajax.xhrClass || 'XMLHttpRequestClass')];
+
+						return xhr;
+					},
+
+					set: function(val)
+					{
+
+					},
+
+				},
+
+			}));
 		}
 		catch(e)
 		{
@@ -816,7 +1010,7 @@ try
 		return Object.prototype.toString.call(source) === '[object Array]';
 	});
 
-	var _fn_gm = function()
+	function _fn_gm()
 	{
 		// https://greasyfork.org/zh-TW/scripts/6414-grant-none-shim/code
 
@@ -994,6 +1188,8 @@ try
 
 			setClipboard: ((typeof GM_setClipboard === 'function') ? GM_setClipboard : throwNewErrorFn('setClipboard')),
 
+			download: ((typeof GM_download === 'function') ? GM_download : throwNewErrorFn('download')),
+
 		});
 	};
 
@@ -1084,6 +1280,8 @@ try
 			*/
 
 		});
+
+		_fn_classes();
 	};
 
 	_fn_env.call(Sandbox);
@@ -1192,7 +1390,7 @@ try
 					success: _fn,
 				});
 
-				console.log([script, script.src, script.readyState]);
+				UF.logTest([script, script.src, script.readyState]);
 			}
 		})();
 	}
@@ -1212,15 +1410,62 @@ try
 
 	//	console.log([Sandbox.UF.fn.utils._parseDomOption({a: 1})]);
 
-		console.log([a = Sandbox.UF.xhrJQuery(), a.getOwnPropertys(true), a.send(false), a.getOwnPropertys(true), ('data' in a.__proto__), a.clone()]);
+		console.log([a = Sandbox.UF.xhr(), a.getOwnPropertys(true), a.send(false), a.getOwnPropertys(true), ('data' in a.__proto__), a.clone()]);
 
-		console.log([GM_xmlhttpRequest({
-			method: "GET",
-			url: "http://www.example.com/",
-			onload: function(response) {
-				//alert(response.responseText);
-			}
-		})]);
+		console.log([a.setRequestHeader('referer', 'http://share.dmhy.org/topics/view/382287_1_A_Tokyo_Ghoul_A_05_BIG5_MP4_720P.html')]);
+
+//		console.log([a()]);
+
+//		console.log([GM_xmlhttpRequest({
+//			method: "GET",
+//			url: "http://www.example.com/",
+//			onload: function(response) {
+//				//alert(response.responseText);
+//			}
+//		})]);
+
+		0 && jQuery(function(){
+
+			var _fn = function(event){
+				UF.doneEvent(event);
+
+				UF.log(event, this);
+
+				var _this = jQuery(this);
+
+				var ret = UF.download({
+					url: _this.attr('href'),
+					name: _this.attr('download'),
+					onload: function(){
+						UF.log('done.onload', this, ret, arguments);
+					},
+				});
+
+				ret
+					.done(function(){
+						UF.log('done', this, ret, arguments);
+					});
+				;
+
+				jQuery(document).add('.a_torrent').off('click.download');
+
+				UF.log('download', ret);
+			};
+
+			jQuery(document)
+				.on('click.download', '.a_torrent', _fn)
+				.on('click.download', function(event){
+					UF.log(event, this);
+				})
+			;
+
+			jQuery('.a_torrent')
+				.on('click.download', _fn)
+			;
+
+			UF.log(jQuery('.a_torrent'));
+
+		});
 
 		console.log([Sandbox.userScriptFramework.getResourceURL, Sandbox.userScriptFramework.getResourceURL()]);
 
