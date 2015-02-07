@@ -975,7 +975,7 @@ try
 	{
 		var newClass;
 
-		createNew = createFunction(displayName + ':createNew', createNew);
+		createNew = createFunction(displayName + ':__construct', createNew);
 
 		newClass = (function ()
 		{
