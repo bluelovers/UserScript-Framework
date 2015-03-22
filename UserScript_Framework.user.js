@@ -62,7 +62,7 @@ try
 
 	const LF = "\n";
 
-	__TEST__ && console.log([this, __GM_STORAGE_PREFIX]);
+	__TEST__ && console.log([this, __GM_STORAGE_PREFIX, window.wrappedJSObject, window]);
 
 	/*
 	var userScriptFramework = userScriptFramework || { options: {}, };
